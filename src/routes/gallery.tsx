@@ -25,12 +25,13 @@ export const Route = createFileRoute("/gallery")({
 });
 
 function Gallery() {
+  const artworks = useArtworks();
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"newest" | "low" | "high">("newest");
 
   const filtered = useMemo(() => {
-    let list = ARTWORKS.filter((a) => (cat === "All" ? true : a.category === cat));
+    let list = artworks.filter((a) => (cat === "All" ? true : a.category === cat));
     if (q.trim()) {
       const s = q.toLowerCase();
       list = list.filter((a) => a.title.toLowerCase().includes(s) || a.category.toLowerCase().includes(s));
@@ -38,7 +39,8 @@ function Gallery() {
     if (sort === "low") list = [...list].sort((a, b) => num(a.price) - num(b.price));
     if (sort === "high") list = [...list].sort((a, b) => num(b.price) - num(a.price));
     return list;
-  }, [cat, q, sort]);
+  }, [cat, q, sort, artworks]);
+
 
   return (
     <SiteShell>
