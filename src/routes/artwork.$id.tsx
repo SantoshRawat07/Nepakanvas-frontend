@@ -1,0 +1,137 @@
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowLeft, ShoppingBag, Heart, Truck, ShieldCheck, Brush } from "lucide-react";
+import { SiteShell } from "@/components/layout/SiteShell";
+import { Section } from "@/components/ui-custom/Section";
+import { Reveal } from "@/components/ui-custom/Reveal";
+import { ArtCard } from "@/components/ui-custom/ArtCard";
+import { CTAButton } from "@/components/ui-custom/CTAButton";
+import { OrderModal } from "@/components/ui-custom/OrderModal";
+import { useArtworks, getArtworkById } from "@/lib/content";
+import { cartActions } from "@/lib/cart";
+
+export const Route = createFileRoute("/artwork/$id")({
+  loader: ({ params }) => {
+    const artwork = getArtworkById(params.id);
+    if (!artwork) throw notFound();
+    return { artwork };
+  },
+  head: ({ loaderData }) => ({
+    meta: loaderData
+      ? [
+          { title: `${loaderData.artwork.title} — NepaKanvas` },
+          { name: "description", content: loaderData.artwork.description.slice(0, 155) },
+          { property: "og:title", content: `${loaderData.artwork.title} — NepaKanvas` },
+          { property: "og:image", content: loaderData.artwork.image },
+        ]
+      : [{ title: "Artwork — NepaKanvas" }],
+  }),
+  component: ArtworkDetail,
+  notFoundComponent: ArtworkNotFound,
+});
+
+function ArtworkNotFound() {
+  return (
+    <SiteShell>
+      <Section size="lg">
+        <div className="text-center">
+          <h1 className="text-5xl font-bold">Artwork not found.</h1>
+          <p className="mt-4 text-muted-foreground">It may have been removed by the studio.</p>
+          <Link to="/gallery" className="mt-6 inline-flex items-center gap-2 underline underline-offset-4">
+            <ArrowLeft className="h-4 w-4" strokeWidth={1.5} /> Back to gallery
+          </Link>
+        </div>
+      </Section>
+    </SiteShell>
+  );
+}
+
+function ArtworkDetail() {
+  const { artwork } = Route.useLoaderData();
+  const artworks = useArtworks();
+  // subscribe to updates; prefer live one if edited by admin
+  const live = artworks.find((a) => a.id === artwork.id) ?? artwork;
+  const related = artworks.filter((a) => a.category === live.category && a.id !== live.id).slice(0, 3);
+  const [orderOpen, setOrderOpen] = useState(false);
+  const [added, setAdded] = useState(false);
+
+  return (
+    <SiteShell>
+      <Section tone="surface" className="pt-28 md:pt-36" size="sm">
+        <Link to="/gallery" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-8">
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} /> Back to gallery
+        </Link>
+
+        <div className="grid md:grid-cols-2 gap-8 md:gap-16 items-start">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="rounded-3xl overflow-hidden bg-background aspect-[4/5] border border-border">
+              <img src={live.image} alt={live.title} className="h-full w-full object-cover" />
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{live.category}</p>
+            <h1 className="mt-3 text-4xl md:text-6xl font-bold leading-[1.05] tracking-tight">{live.title}</h1>
+            <p className="mt-2 text-sm text-muted-foreground">by {live.artist}</p>
+
+            <div className="mt-8 flex items-baseline gap-4">
+              <span className="text-4xl font-bold">{live.price}</span>
+              <span className="text-sm text-muted-foreground">{live.size}</span>
+            </div>
+
+            <p className="mt-8 text-base text-muted-foreground leading-relaxed font-light">{live.description}</p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <CTAButton
+                size="lg" variant="outline"
+                onClick={() => {
+                  cartActions.add({ id: live.id, title: live.title, image: live.image, price: live.price });
+                  setAdded(true);
+                  setTimeout(() => setAdded(false), 1500);
+                }}
+              >
+                <ShoppingBag className="h-4 w-4" strokeWidth={1.5} />
+                {added ? "Added to cart ✓" : "Add to cart"}
+              </CTAButton>
+              <CTAButton size="lg" onClick={() => setOrderOpen(true)} withArrow>Order now</CTAButton>
+              <button aria-label="Wishlist" className="h-12 w-12 rounded-full border border-border inline-flex items-center justify-center hover:border-foreground transition-colors">
+                <Heart className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+            </div>
+
+            <div className="mt-10 grid grid-cols-3 gap-4">
+              <Perk icon={Brush} label="Handmade" />
+              <Perk icon={Truck} label="Ships in 5–7d" />
+              <Perk icon={ShieldCheck} label="Secure pay" />
+            </div>
+          </motion.div>
+        </div>
+      </Section>
+
+      {related.length > 0 && (
+        <Section>
+          <Reveal>
+            <h2 className="text-2xl md:text-4xl font-bold mb-10">You might also love</h2>
+          </Reveal>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
+            {related.map((a) => (
+              <ArtCard key={a.id} id={a.id} image={a.image} title={a.title} category={a.category} price={a.price} />
+            ))}
+          </div>
+        </Section>
+      )}
+
+      <OrderModal open={orderOpen} onClose={() => setOrderOpen(false)} artwork={{ id: live.id, title: live.title, price: live.price }} />
+    </SiteShell>
+  );
+}
+
+function Perk({ icon: Icon, label }: { icon: any; label: string }) {
+  return (
+    <div className="rounded-2xl border border-border p-4 text-center">
+      <Icon className="h-5 w-5 mx-auto" strokeWidth={1.25} />
+      <p className="mt-2 text-xs font-medium">{label}</p>
+    </div>
+  );
+}

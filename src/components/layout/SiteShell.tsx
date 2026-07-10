@@ -4,6 +4,7 @@ import { motion, useScroll, useSpring } from "framer-motion";
 import { ArrowUp, MessageCircle } from "lucide-react";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { CustomCursor } from "@/components/ui-custom/CustomCursor";
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const { scrollYProgress } = useScroll();
@@ -19,6 +20,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh flex flex-col bg-background text-foreground">
+      <CustomCursor />
       <motion.div style={{ scaleX }} className="fixed top-0 inset-x-0 h-[2px] bg-foreground z-[70] origin-left" />
       <Navbar />
       <main className="flex-1">{children}</main>

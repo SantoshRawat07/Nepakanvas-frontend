@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef } from "react";
+import { motion } from "framer-motion";
 import { Brush, Sparkles, Truck, ShieldCheck, Users, Award, Star } from "lucide-react";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { Section, SectionHeader } from "@/components/ui-custom/Section";
 import { Reveal } from "@/components/ui-custom/Reveal";
 import { ArtCard } from "@/components/ui-custom/ArtCard";
 import { CTALink } from "@/components/ui-custom/CTAButton";
+import { FloatingIcons } from "@/components/ui-custom/FloatingIcons";
 import { ASSETS } from "@/lib/assets";
-import { ARTWORKS } from "@/lib/artworks";
 import { fadeUp, stagger } from "@/lib/motion";
+import { useArtworks, useHero, useTeam } from "@/lib/content";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,6 +32,7 @@ function Home() {
       <Featured />
       <WhyUs />
       <ServicesPreview />
+      <TeamSection />
       <Testimonials />
       <CallToAction />
     </SiteShell>
@@ -39,43 +40,53 @@ function Home() {
 }
 
 function Hero() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 140]);
-  const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.2]);
-
+  const hero = useHero();
+  const lines = hero.title.split("\n");
   return (
-    <section ref={ref} className="relative min-h-dvh flex items-end overflow-hidden bg-secondary pt-24 pb-16 md:pb-24">
-      <motion.div style={{ y, opacity }} className="absolute inset-0">
-        <img src={ASSETS.artistHolding} alt="" className="h-full w-full object-cover opacity-95" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-background/60" />
-      </motion.div>
+    <section className="relative min-h-dvh flex items-center overflow-hidden bg-secondary pt-24 pb-16">
+      <FloatingIcons />
+      {/* subtle radial highlight */}
+      <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_55%,rgba(0,0,0,0.06)_100%)]" />
 
-      <div className="relative mx-auto max-w-7xl container-px w-full">
+      <div className="relative mx-auto max-w-7xl container-px w-full text-center">
         <motion.p
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.8 }}
-          className="text-xs uppercase tracking-[0.4em] text-foreground/70 mb-6"
+          className="text-xs uppercase tracking-[0.4em] text-foreground/70 mb-8"
         >
-          Handcrafted in Nepal — Est. 2021
+          {hero.eyebrow}
         </motion.p>
-        <motion.h1
-          initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-          className="text-5xl sm:text-7xl md:text-8xl lg:text-[9rem] font-bold leading-[0.95] tracking-[-0.04em] max-w-5xl"
-        >
-          Every Wall<br />Deserves Art.
-        </motion.h1>
+        <h1 className="font-bold leading-[0.9] tracking-[-0.045em] text-6xl sm:text-8xl md:text-[10rem] lg:text-[12rem]">
+          {lines.map((line, i) => (
+            <motion.span
+              key={i}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 + i * 0.12, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+              className="block"
+            >
+              {line}
+            </motion.span>
+          ))}
+        </h1>
         <motion.p
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.8 }}
-          className="mt-8 max-w-xl text-base md:text-lg text-foreground/70 font-light"
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.8 }}
+          className="mt-10 max-w-xl mx-auto text-base md:text-lg text-foreground/70 font-light"
         >
-          A studio dedicated to turning your favourite moments and ideas into timeless canvas, portrait and wall art — painted by hand.
+          {hero.subtitle}
         </motion.p>
         <motion.div
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75, duration: 0.8 }}
-          className="mt-10 flex flex-wrap gap-3"
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85, duration: 0.8 }}
+          className="mt-10 flex flex-wrap justify-center gap-3"
         >
           <CTALink to="/gallery" variant="primary" size="lg" withArrow>Explore Collection</CTALink>
           <CTALink to="/services" variant="outline" size="lg">Custom Order</CTALink>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4, duration: 1 }}
+          className="mt-16 flex justify-center"
+        >
+          <div className="h-10 w-[1px] bg-foreground/30 animate-pulse" />
         </motion.div>
       </div>
     </section>
@@ -118,6 +129,8 @@ function Categories() {
 }
 
 function Featured() {
+  const artworks = useArtworks();
+  const list = artworks.filter((a) => a.featured).slice(0, 6);
   return (
     <Section tone="surface">
       <SectionHeader
@@ -127,9 +140,9 @@ function Featured() {
       />
       <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }}
         className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
-        {ARTWORKS.slice(0, 6).map((a) => (
+        {list.map((a) => (
           <motion.div key={a.id} variants={fadeUp}>
-            <ArtCard image={a.image} title={a.title} category={a.category} price={a.price} />
+            <ArtCard id={a.id} image={a.image} title={a.title} category={a.category} price={a.price} />
           </motion.div>
         ))}
       </motion.div>
@@ -196,6 +209,28 @@ function ServicesPreview() {
   );
 }
 
+function TeamSection() {
+  const team = useTeam();
+  return (
+    <Section>
+      <SectionHeader eyebrow="Our team" title="The hands behind the work." />
+      <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }}
+        className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
+        {team.map((m) => (
+          <motion.article key={m.id} variants={fadeUp} className="group">
+            <div className="aspect-[4/5] overflow-hidden rounded-2xl bg-secondary">
+              <img src={m.image} alt={m.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            </div>
+            <h3 className="mt-4 text-xl font-bold">{m.name}</h3>
+            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mt-1">{m.role}</p>
+            <p className="mt-3 text-sm text-muted-foreground font-light leading-relaxed">{m.bio}</p>
+          </motion.article>
+        ))}
+      </motion.div>
+    </Section>
+  );
+}
+
 const REVIEWS = [
   { name: "Anjali Shrestha", role: "Kathmandu", text: "The portrait of my grandmother brought my whole family to tears. Beautiful, beautiful work.", rating: 5 },
   { name: "Rohan Maharjan", role: "Lalitpur", text: "Booked live painting for our wedding — guests couldn't stop watching. A keepsake forever.", rating: 5 },
@@ -204,7 +239,7 @@ const REVIEWS = [
 
 function Testimonials() {
   return (
-    <Section>
+    <Section tone="surface">
       <SectionHeader eyebrow="Words from clients" title="Loved across Nepal." />
       <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }}
         className="grid md:grid-cols-3 gap-6">

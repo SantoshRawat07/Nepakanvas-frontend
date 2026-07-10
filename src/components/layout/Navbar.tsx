@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ShoppingBag, Heart, User } from "lucide-react";
+import { Menu, X, ShoppingBag, User, LogOut, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ASSETS } from "@/lib/assets";
+import { useCartCount } from "@/lib/cart";
+import { authActions, useCurrentUser } from "@/lib/auth";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -17,6 +19,9 @@ const NAV = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [userMenu, setUserMenu] = useState(false);
+  const count = useCartCount();
+  const user = useCurrentUser();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -33,9 +38,7 @@ export function Navbar() {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className={cn(
           "fixed top-0 inset-x-0 z-50 transition-all duration-500",
-          scrolled
-            ? "bg-background/85 backdrop-blur-xl border-b border-border"
-            : "bg-transparent"
+          scrolled ? "bg-background/85 backdrop-blur-xl border-b border-border" : "bg-transparent"
         )}
       >
         <div className="mx-auto max-w-7xl container-px h-16 md:h-20 flex items-center justify-between">
@@ -47,8 +50,7 @@ export function Navbar() {
           <nav className="hidden lg:flex items-center gap-9">
             {NAV.map((n) => (
               <Link
-                key={n.to}
-                to={n.to}
+                key={n.to} to={n.to}
                 className="text-sm font-medium text-foreground/75 hover:text-foreground transition-colors"
                 activeProps={{ className: "text-foreground" }}
                 activeOptions={{ exact: n.to === "/" }}
@@ -59,18 +61,63 @@ export function Navbar() {
           </nav>
 
           <div className="flex items-center gap-1.5">
-            <button aria-label="Wishlist" className="hidden md:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary transition-colors">
-              <Heart className="h-[18px] w-[18px]" strokeWidth={1.5} />
-            </button>
-            <button aria-label="Cart" className="hidden md:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary transition-colors">
+            <Link to="/cart" aria-label="Cart" className="relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary transition-colors">
               <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.5} />
-            </button>
-            <button aria-label="Account" className="hidden md:inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary transition-colors">
-              <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
-            </button>
+              {count > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-foreground text-background text-[10px] font-bold flex items-center justify-center">
+                  {count}
+                </span>
+              )}
+            </Link>
+
+            <div className="relative hidden md:block">
+              <button
+                aria-label="Account"
+                onClick={() => setUserMenu((v) => !v)}
+                className="inline-flex h-10 items-center gap-2 rounded-full px-3 hover:bg-secondary transition-colors"
+              >
+                <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                {user && <span className="text-sm font-medium max-w-[80px] truncate">{user.name.split(" ")[0]}</span>}
+              </button>
+              <AnimatePresence>
+                {userMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+                    className="absolute right-0 mt-2 w-56 rounded-2xl border border-border bg-background shadow-elevated p-2"
+                    onMouseLeave={() => setUserMenu(false)}
+                  >
+                    {user ? (
+                      <>
+                        <div className="px-3 py-2">
+                          <p className="text-sm font-semibold truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                        <div className="h-px bg-border my-1" />
+                        {user.role === "admin" && (
+                          <Link to="/admin" onClick={() => setUserMenu(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm">
+                            <LayoutDashboard className="h-4 w-4" strokeWidth={1.5} /> Admin dashboard
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => { authActions.logout(); setUserMenu(false); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm text-left"
+                        >
+                          <LogOut className="h-4 w-4" strokeWidth={1.5} /> Sign out
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <Link to="/auth/login" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Sign in</Link>
+                        <Link to="/auth/signup" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Create account</Link>
+                      </>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             <button
-              aria-label="Menu"
-              onClick={() => setOpen(true)}
+              aria-label="Menu" onClick={() => setOpen(true)}
               className="lg:hidden h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-secondary"
             >
               <Menu className="h-5 w-5" strokeWidth={1.5} />
@@ -82,9 +129,7 @@ export function Navbar() {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-background"
           >
             <div className="container-px mx-auto max-w-7xl h-16 md:h-20 flex items-center justify-between">
@@ -98,21 +143,26 @@ export function Navbar() {
             </div>
             <nav className="container-px mx-auto max-w-7xl flex flex-col gap-2 mt-10">
               {NAV.map((n, i) => (
-                <motion.div
-                  key={n.to}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 * i, duration: 0.4 }}
-                >
-                  <Link
-                    to={n.to}
-                    onClick={() => setOpen(false)}
-                    className="block py-4 text-4xl font-bold tracking-tight border-b border-border"
-                  >
+                <motion.div key={n.to} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i, duration: 0.4 }}>
+                  <Link to={n.to} onClick={() => setOpen(false)} className="block py-4 text-4xl font-bold tracking-tight border-b border-border">
                     {n.label}
                   </Link>
                 </motion.div>
               ))}
+              <div className="mt-6 flex flex-col gap-2">
+                <Link to="/cart" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Cart ({count})</Link>
+                {user ? (
+                  <>
+                    {user.role === "admin" && <Link to="/admin" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Admin</Link>}
+                    <button onClick={() => { authActions.logout(); setOpen(false); }} className="py-3 text-lg font-medium text-left">Sign out</button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/auth/login" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Sign in</Link>
+                    <Link to="/auth/signup" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Create account</Link>
+                  </>
+                )}
+              </div>
             </nav>
           </motion.div>
         )}

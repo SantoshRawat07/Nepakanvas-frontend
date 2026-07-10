@@ -5,7 +5,8 @@ import { SiteShell } from "@/components/layout/SiteShell";
 import { Section } from "@/components/ui-custom/Section";
 import { Reveal } from "@/components/ui-custom/Reveal";
 import { ArtCard } from "@/components/ui-custom/ArtCard";
-import { ARTWORKS, CATEGORIES } from "@/lib/artworks";
+import { CATEGORIES } from "@/lib/artworks";
+import { useArtworks } from "@/lib/content";
 import { motion } from "framer-motion";
 import { fadeUp, stagger } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -24,12 +25,13 @@ export const Route = createFileRoute("/gallery")({
 });
 
 function Gallery() {
+  const artworks = useArtworks();
   const [cat, setCat] = useState<(typeof CATEGORIES)[number]>("All");
   const [q, setQ] = useState("");
   const [sort, setSort] = useState<"newest" | "low" | "high">("newest");
 
   const filtered = useMemo(() => {
-    let list = ARTWORKS.filter((a) => (cat === "All" ? true : a.category === cat));
+    let list = artworks.filter((a) => (cat === "All" ? true : a.category === cat));
     if (q.trim()) {
       const s = q.toLowerCase();
       list = list.filter((a) => a.title.toLowerCase().includes(s) || a.category.toLowerCase().includes(s));
@@ -37,7 +39,8 @@ function Gallery() {
     if (sort === "low") list = [...list].sort((a, b) => num(a.price) - num(b.price));
     if (sort === "high") list = [...list].sort((a, b) => num(b.price) - num(a.price));
     return list;
-  }, [cat, q, sort]);
+  }, [cat, q, sort, artworks]);
+
 
   return (
     <SiteShell>
@@ -93,7 +96,7 @@ function Gallery() {
             className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
             {filtered.map((a) => (
               <motion.div key={a.id} variants={fadeUp}>
-                <ArtCard image={a.image} title={a.title} category={a.category} price={a.price} />
+                <ArtCard id={a.id} image={a.image} title={a.title} category={a.category} price={a.price} />
               </motion.div>
             ))}
           </motion.div>
