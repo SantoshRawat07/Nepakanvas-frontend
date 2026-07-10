@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { motion, useScroll, useSpring } from "framer-motion";
@@ -27,7 +29,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <Footer />
 
       <a
-        href="https://wa.me/9779800000000"
+        href="https://wa.me/9779864"
         target="_blank"
         rel="noreferrer"
         aria-label="WhatsApp"

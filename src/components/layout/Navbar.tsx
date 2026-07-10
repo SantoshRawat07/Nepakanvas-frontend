@@ -1,19 +1,21 @@
-import { Link } from "@tanstack/react-router";
+"use client";
+
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ShoppingBag, User, LogOut, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ASSETS } from "@/lib/assets";
 import { useCartCount } from "@/lib/cart";
 import { authActions, useCurrentUser } from "@/lib/auth";
 
 const NAV = [
-  { to: "/", label: "Home" },
-  { to: "/about", label: "About" },
-  { to: "/gallery", label: "Our Arts" },
-  { to: "/services", label: "Services" },
-  { to: "/classes", label: "Art Classes" },
-  { to: "/contact", label: "Contact" },
+  { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
+  { href: "/gallery", label: "Our Arts" },
+  { href: "/services", label: "Services" },
+  { href: "/classes", label: "Art Classes" },
+  { href: "/contact", label: "Contact" },
 ] as const;
 
 export function Navbar() {
@@ -22,6 +24,8 @@ export function Navbar() {
   const [userMenu, setUserMenu] = useState(false);
   const count = useCartCount();
   const user = useCurrentUser();
+  const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -42,18 +46,22 @@ export function Navbar() {
         )}
       >
         <div className="mx-auto max-w-7xl container-px h-16 md:h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <img src={ASSETS.logo} alt="NepaKanvas" className="h-9 w-9 rounded-full object-cover" />
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <img src="/nepakanvaslogo.jpg" alt="NepaKanvas" className="h-9 w-9 rounded-full object-cover" />
             <span className="font-bold tracking-tight text-base md:text-lg">NepaKanvas</span>
           </Link>
 
           <nav className="hidden lg:flex items-center gap-9">
             {NAV.map((n) => (
               <Link
-                key={n.to} to={n.to}
-                className="text-sm font-medium text-foreground/75 hover:text-foreground transition-colors"
-                activeProps={{ className: "text-foreground" }}
-                activeOptions={{ exact: n.to === "/" }}
+                key={n.href}
+                href={n.href}
+                className={cn(
+                  "text-sm font-medium transition-colors",
+                  pathname === n.href || (n.href !== "/" && pathname.startsWith(n.href))
+                    ? "text-foreground"
+                    : "text-foreground/75 hover:text-foreground"
+                )}
               >
                 {n.label}
               </Link>
@@ -61,7 +69,7 @@ export function Navbar() {
           </nav>
 
           <div className="flex items-center gap-1.5">
-            <Link to="/cart" aria-label="Cart" className="relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary transition-colors">
+            <Link href="/cart" aria-label="Cart" className="relative inline-flex h-10 w-10 items-center justify-center rounded-full hover:bg-secondary transition-colors">
               <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.5} />
               {count > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-foreground text-background text-[10px] font-bold flex items-center justify-center">
@@ -94,7 +102,7 @@ export function Navbar() {
                         </div>
                         <div className="h-px bg-border my-1" />
                         {user.role === "admin" && (
-                          <Link to="/admin" onClick={() => setUserMenu(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm">
+                          <Link href="/admin" onClick={() => setUserMenu(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm">
                             <LayoutDashboard className="h-4 w-4" strokeWidth={1.5} /> Admin dashboard
                           </Link>
                         )}
@@ -107,8 +115,8 @@ export function Navbar() {
                       </>
                     ) : (
                       <>
-                        <Link to="/auth/login" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Sign in</Link>
-                        <Link to="/auth/signup" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Create account</Link>
+                        <Link href="/auth/login" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Sign in</Link>
+                        <Link href="/auth/signup" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Create account</Link>
                       </>
                     )}
                   </motion.div>
@@ -133,8 +141,8 @@ export function Navbar() {
             className="fixed inset-0 z-[60] bg-background"
           >
             <div className="container-px mx-auto max-w-7xl h-16 md:h-20 flex items-center justify-between">
-              <Link to="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
-                <img src={ASSETS.logo} alt="NepaKanvas" className="h-9 w-9 rounded-full object-cover" />
+              <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
+                <img src="/nepakanvaslogo.jpg" alt="NepaKanvas" className="h-9 w-9 rounded-full object-cover" />
                 <span className="font-bold tracking-tight">NepaKanvas</span>
               </Link>
               <button aria-label="Close" onClick={() => setOpen(false)} className="h-10 w-10 inline-flex items-center justify-center rounded-full hover:bg-secondary">
@@ -143,23 +151,23 @@ export function Navbar() {
             </div>
             <nav className="container-px mx-auto max-w-7xl flex flex-col gap-2 mt-10">
               {NAV.map((n, i) => (
-                <motion.div key={n.to} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i, duration: 0.4 }}>
-                  <Link to={n.to} onClick={() => setOpen(false)} className="block py-4 text-4xl font-bold tracking-tight border-b border-border">
+                <motion.div key={n.href} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i, duration: 0.4 }}>
+                  <Link href={n.href} onClick={() => setOpen(false)} className="block py-4 text-4xl font-bold tracking-tight border-b border-border">
                     {n.label}
                   </Link>
                 </motion.div>
               ))}
               <div className="mt-6 flex flex-col gap-2">
-                <Link to="/cart" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Cart ({count})</Link>
+                <Link href="/cart" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Cart ({count})</Link>
                 {user ? (
                   <>
-                    {user.role === "admin" && <Link to="/admin" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Admin</Link>}
+                    {user.role === "admin" && <Link href="/admin" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Admin</Link>}
                     <button onClick={() => { authActions.logout(); setOpen(false); }} className="py-3 text-lg font-medium text-left">Sign out</button>
                   </>
                 ) : (
                   <>
-                    <Link to="/auth/login" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Sign in</Link>
-                    <Link to="/auth/signup" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Create account</Link>
+                    <Link href="/auth/login" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Sign in</Link>
+                    <Link href="/auth/signup" onClick={() => setOpen(false)} className="py-3 text-lg font-medium">Create account</Link>
                   </>
                 )}
               </div>

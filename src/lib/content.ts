@@ -1,6 +1,8 @@
 import { createPersistedStore, useStore } from "./store";
 import { ARTWORKS as SEED_ARTWORKS, type Artwork } from "./artworks";
-import { ASSETS } from "./assets";
+import suresh from "../assets/suresh.jpg";
+import artist from "../assets/artist.jpg";
+import menprofile from "../assets/menprofile.jpg";
 
 export interface TeamMember {
   id: string;
@@ -35,9 +37,9 @@ const SEED: ContentState = {
     featured: true,
   })),
   team: [
-    { id: "t1", name: "Nirajan K.", role: "Lead Artist & Founder", bio: "Portrait & canvas specialist with 8+ years of studio practice.", image: ASSETS.artistHolding },
-    { id: "t2", name: "Sneha M.", role: "Wall Art Director", bio: "Large-scale murals for hotels, cafés and residences across the valley.", image: ASSETS.fourFace },
-    { id: "t3", name: "Aakash R.", role: "Live Event Painter", bio: "Wedding & ceremony live paintings, delivered on the same day.", image: ASSETS.portraitGirl },
+    { id: "t1", name: "Suresh Sirmal.", role: "Lead Artist & Founder", bio: "Portrait & canvas specialist with 8+ years of studio practice.", image: suresh.src },
+    { id: "t2", name: "Mira Thakuri.", role: "Wall Art Director", bio: "Large-scale murals for hotels, cafés and residences across the valley.", image: artist.src },
+    { id: "t3", name: "Ayan R.", role: "Live Event Painter", bio: "Wedding & ceremony live paintings, delivered on the same day.", image: menprofile.src },
   ],
 };
 

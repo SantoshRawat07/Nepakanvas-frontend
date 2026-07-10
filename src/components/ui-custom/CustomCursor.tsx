@@ -17,7 +17,11 @@ export function CustomCursor() {
       dx = e.clientX; dy = e.clientY;
       if (dot.current) dot.current.style.transform = `translate3d(${dx - 3}px, ${dy - 3}px, 0)`;
       const t = e.target as HTMLElement | null;
+      // determine if pointer is over interactive elements (links/buttons/etc.)
       setHover(!!t?.closest("a, button, [role=button], input, textarea, select, label"));
+      // keep native cursor visible when over header or footer
+      const overUi = !!t?.closest("header, footer");
+      document.body.style.cursor = overUi ? "" : "none";
     };
     const loop = () => {
       rx += (dx - rx) * 0.18;
@@ -27,6 +31,7 @@ export function CustomCursor() {
     };
     let raf = requestAnimationFrame(loop);
     window.addEventListener("mousemove", onMove);
+    // start hidden; will be toggled on first move if over header/footer
     document.body.style.cursor = "none";
     return () => {
       cancelAnimationFrame(raf);

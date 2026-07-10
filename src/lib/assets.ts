@@ -1,17 +1,18 @@
-import logo from "@/assets/logo.jpg.asset.json";
-import portraitGirl from "@/assets/portrait-girl.webp.asset.json";
-import artistHolding from "@/assets/artist-holding.webp.asset.json";
-import portraitBalen from "@/assets/portrait-balen.webp.asset.json";
-import fourFace from "@/assets/four-face.webp.asset.json";
-import portraitRonaldo from "@/assets/portrait-ronaldo.webp.asset.json";
-import buddha from "@/assets/buddha.webp.asset.json";
-
-export const ASSETS = {
-  logo: logo.url,
-  portraitGirl: portraitGirl.url,
-  artistHolding: artistHolding.url,
-  portraitBalen: portraitBalen.url,
-  fourFace: fourFace.url,
-  portraitRonaldo: portraitRonaldo.url,
-  buddha: buddha.url,
+// Local image mappings - images are stored in /public and /src/assets folders
+export const IMAGES = {
+  logo: "/nepakanvaslogo.jpg",
+  portrait: "/assets/portrait.webp",
+  buddha: "/assets/buddha.webp",
+  family: "/assets/family.webp",
+  balen: "/assets/balen.webp",
+  person: "/assets/person.webp",
+  flower: "/assets/flower.jpeg",
+  canvas: "/assets/canvas.webp",
+  camvas: "/assets/camvas.jpeg",
+  artis : "/assets/artist.jpg",
+  suresh : "/assets/suresh.jpg",
+  menprofile : "/assets/menprofile.jpg",
+  pm : "/assets/pm.webp",
+  wedding : "/assets/wedding.jpeg",
+  wallpainting : "/assets/wallpainting.jpeg"
 };
