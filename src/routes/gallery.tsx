@@ -96,7 +96,7 @@ function Gallery() {
             className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
             {filtered.map((a) => (
               <motion.div key={a.id} variants={fadeUp}>
-                <ArtCard image={a.image} title={a.title} category={a.category} price={a.price} />
+                <ArtCard id={a.id} image={a.image} title={a.title} category={a.category} price={a.price} />
               </motion.div>
             ))}
           </motion.div>
