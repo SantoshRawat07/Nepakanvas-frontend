@@ -1,49 +1,111 @@
 "use client";
 
+import { useState, useRef } from "react";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { Section, SectionHeader } from "@/components/ui-custom/Section";
 import { Reveal } from "@/components/ui-custom/Reveal";
 import { CTALink } from "@/components/ui-custom/CTAButton";
-import { Check } from "lucide-react";
+import { Check, ImagePlus, X } from "lucide-react";
+import portrait from "@/assets/portrait.webp";
+import wallpainting from "@/assets/wallpaints.png";
+import balen from "@/assets/balen.webp";
+import wedding from "@/assets/weeding.jpeg";
 
 const SERVICES = [
   {
     title: "Canvas Painting",
-    image: "/assets/portrait.webp",
+    image: portrait.src,
     desc: "Mini and large originals, painted by hand on cotton canvas.",
     options: ["3″×3″ mini canvas", "6″×6″ medium", "Custom sizes on request"],
     price: "From Rs 600",
   },
   {
     title: "Wall Painting",
-    image: "/assets/family.webp",
+    image: wallpainting.src,
     desc: "Murals and feature walls for homes and businesses.",
     options: ["Residential", "Commercial", "Hotels & Restaurants", "Schools & Offices"],
     price: "Quote on site",
   },
   {
     title: "Wedding Live Painting",
-    image: "/assets/person.webp",
+    image: wedding.src,
     desc: "We paint the ceremony as it happens — a keepsake unlike any photo.",
     options: ["Wedding ceremony", "Engagement", "Reception", "Anniversary"],
     price: "Packages from Rs 25,000",
   },
   {
     title: "Custom Orders",
-    image: "/assets/balen.webp",
+    image: balen.src,
     desc: "Send any photo. We'll paint it. Single subject or group portraits.",
     options: ["Reference photo", "Choose size", "Approve preview", "Delivered to your door"],
     price: "From Rs 800",
   },
 ];
 
+const MAX_FILES = 5;
+const MAX_SIZE_MB = 8;
+const ACCEPTED_TYPES = ["image/jpeg", "image/png", "image/jpg"];
+
+type RefImage = {
+  file: File;
+  preview: string;
+};
+
 export default function Services() {
+  const [refImages, setRefImages] = useState<RefImage[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleFiles(fileList: FileList | null) {
+    if (!fileList) return;
+    setError(null);
+
+    const incoming = Array.from(fileList);
+    const valid: File[] = [];
+
+    for (const file of incoming) {
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        setError("Only JPEG or PNG images are allowed.");
+        continue;
+      }
+      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+        setError(`Each image must be under ${MAX_SIZE_MB}MB.`);
+        continue;
+      }
+      valid.push(file);
+    }
+
+    setRefImages((prev) => {
+      const combined = [...prev, ...valid.map((file) => ({ file, preview: URL.createObjectURL(file) }))];
+      if (combined.length > MAX_FILES) {
+        setError(`You can upload up to ${MAX_FILES} images.`);
+        return combined.slice(0, MAX_FILES);
+      }
+      return combined;
+    });
+
+    // reset input so the same file can be re-selected if removed then re-added
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function removeImage(index: number) {
+    setRefImages((prev) => {
+      const next = [...prev];
+      URL.revokeObjectURL(next[index].preview);
+      next.splice(index, 1);
+      return next;
+    });
+  }
+
   return (
     <SiteShell>
       <Section tone="surface" className="pt-32 md:pt-44" size="sm">
         <Reveal>
           <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground mb-6">What we do</p>
-          <h1 className="text-5xl md:text-7xl font-bold leading-[1] tracking-tight max-w-4xl">Services for every wall, every memory.</h1>
+          <h1 className="text-5xl md:text-7xl font-bold leading-[1] tracking-tight max-w-4xl"> Our Available Services.</h1>
+        <p className="mt-6 max-w-xl text-muted-foreground font-light text-lg">
+            We offer a range of art services tailored to meet your unique needs.
+          </p>
         </Reveal>
       </Section>
 
@@ -89,12 +151,58 @@ export default function Services() {
               <Input label="Preferred size" placeholder="e.g. 6×6 inch"/>
               <Input label="Budget (NPR)" placeholder="e.g. 2000"/>
             </div>
+
+            {/* Reference images upload - full width */}
+            <div className="block">
+              <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Reference images</span>
+
+              <label
+                htmlFor="reference-images"
+                className="mt-2 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-background px-5 py-8 text-center text-sm cursor-pointer hover:border-foreground transition-colors"
+              >
+                <ImagePlus className="h-5 w-5" strokeWidth={1.5} />
+                <span className="text-muted-foreground text-xs">
+                  Click to upload <span className="hidden sm:inline">JPEG or PNG (up to {MAX_FILES}, {MAX_SIZE_MB}MB each)</span>
+                </span>
+                <input
+                  id="reference-images"
+                  ref={inputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/jpg"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => handleFiles(e.target.files)}
+                />
+              </label>
+
+              {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
+
+              {refImages.length > 0 && (
+                <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-3">
+                  {refImages.map((img, idx) => (
+                    <div key={img.preview} className="relative aspect-square rounded-xl overflow-hidden bg-secondary group">
+                      <img src={img.preview} alt={`Reference ${idx + 1}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-label="Remove image"
+                      >
+                        <X className="h-3 w-3" strokeWidth={2} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Input label="Deadline" type="date"/>
             <label className="block">
               <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Description</span>
               <textarea rows={5} placeholder="Tell us what you'd like painted…"
                 className="mt-2 w-full rounded-2xl border border-border bg-background px-5 py-4 text-sm focus:outline-none focus:border-foreground transition-colors"/>
             </label>
+
             <CTALink href="/contact" size="lg" className="justify-self-start mt-2" withArrow>Submit request</CTALink>
           </form>
         </Reveal>

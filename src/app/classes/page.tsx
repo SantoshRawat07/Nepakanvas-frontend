@@ -6,6 +6,7 @@ import { Reveal } from "@/components/ui-custom/Reveal";
 import { CTALink } from "@/components/ui-custom/CTAButton";
 import { motion } from "framer-motion";
 import { fadeUp, stagger } from "@/lib/motion";
+import {StudentGalleryRail} from "@/components/ui-custom/Studentgallery";
 
 const COURSES = [
   { level: "Kids", title: "Kids Art Adventure", age: "Ages 5–12", duration: "8 weeks", price: "Rs 6,000", instructor: "Mira T.", topics: ["Drawing basics", "Colour play", "Creative thinking"] },
@@ -20,12 +21,7 @@ const FAQ = [
   { q: "Online or in-studio?", a: "All classes are in-studio in Kathmandu. Online cohorts opening soon." },
   { q: "Do you give a certificate?", a: "Yes — all levels include a NepaKanvas certificate of completion." },
 ];
-const STUDENT_WORK: string[] = [
-  "/assets/portrait.webp",
-  "/assets/buddha.webp",
-  "/assets/family.webp",
-  "/assets/balen.webp",
-];
+
 
 export default function Classes() {
   return (
@@ -62,7 +58,7 @@ export default function Classes() {
                   <p className="text-2xl font-bold">{c.price}</p>
                   <p className="text-xs text-muted-foreground mt-1">Instructor: {c.instructor}</p>
                 </div>
-                <CTALink href="/contact" withArrow>Enroll</CTALink>
+                <CTALink href="/contact" withArrow className="hover:bg-primary">Enroll</CTALink>
               </div>
             </motion.article>
           ))}
@@ -70,22 +66,9 @@ export default function Classes() {
       </Section>
 
       <Section tone="surface">
-        <SectionHeader eyebrow="Student work" title="From first stroke to finished piece." />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
-  {STUDENT_WORK.map((src, i) => (
-    <Reveal key={src} delay={i * 0.04}>
-      <div className="aspect-square overflow-hidden rounded-2xl bg-background">
-        <img
-          src={src}
-          alt="Student artwork"
-          loading="lazy"
-          className="h-full w-full object-cover hover:scale-105 transition-transform duration-700"
-        />
-      </div>
-    </Reveal>
-  ))}
-</div>
-      </Section>
+  <SectionHeader eyebrow="Student work" title="From first stroke to finished piece." />
+  <StudentGalleryRail/>
+</Section>
 
       <Section>
         <SectionHeader eyebrow="Questions" title="Frequently asked." />

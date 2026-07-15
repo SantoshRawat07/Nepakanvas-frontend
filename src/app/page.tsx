@@ -29,21 +29,20 @@ export default function Home() {
     </SiteShell>
   );
 }
-
 function Hero() {
   const hero = useHero();
   const lines = hero.title.split("\n");
   const lastIndex = lines.length - 1;
 
   return (
-    <section className="relative min-h-dvh flex items-center overflow-hidden bg-secondary pt-24 pb-6">
+    <section className="relative min-h-[65dvh] lg:min-h-dvh flex items-center overflow-hidden bg-secondary pt-16 lg:pt-24 pb-0 lg:pb-6">
       <FloatingIcons />
       <div aria-hidden className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,transparent_55%,rgba(0,0,0,0.06)_100%)]" />
 
       <div className="relative mx-auto max-w-7xl container-px w-full text-center">
         <motion.p
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.8 }}
-          className="text-xs uppercase tracking-[0.4em] text-foreground/70 mb-8"
+          className="text-xs uppercase tracking-[0.4em] text-foreground/70 mb-3 lg:mb-8"
         >
           {hero.eyebrow}
         </motion.p>
@@ -89,29 +88,22 @@ function Hero() {
 
         <motion.p
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7, duration: 0.8 }}
-          className="mt-10 max-w-xl mx-auto text-base md:text-lg text-foreground/70 font-light"
+          className="mt-10 lg:mt-10 max-w-xl mx-auto text-base md:text-lg text-foreground/70 font-light"
         >
           {hero.subtitle}
         </motion.p>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85, duration: 0.8 }}
-          className="mt-10 flex flex-wrap justify-center gap-3"
+          className="mt-10 lg:mt-10 flex flex-wrap justify-center gap-3"
         >
           <CTALink href="/gallery" variant="primary" size="lg" withArrow className="hover:bg-primary">Explore Collection</CTALink>
           <CTALink href="/services" variant="outline" size="lg">Custom Order</CTALink>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.4, duration: 1 }}
-          className="mt-16 flex justify-center"
-        >
-          <div className="h-10 w-[1px] bg-foreground/30 animate-pulse" />
         </motion.div>
       </div>
     </section>
   );
 }
-
 function HeadlineUnderline() {
   return (
     <motion.svg

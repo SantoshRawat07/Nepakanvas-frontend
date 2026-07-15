@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCurrentUser } from "@/lib/auth";
 import { SiteShell } from "@/components/layout/SiteShell";
@@ -11,6 +11,25 @@ import { getArtworkById } from "@/lib/content";
 import { orderActions } from "@/lib/orders";
 
 export default function OrderPage() {
+  return (
+    <Suspense fallback={<OrderPageFallback />}>
+      <OrderPageContent />
+    </Suspense>
+  );
+}
+
+function OrderPageFallback() {
+  return (
+    <SiteShell>
+      <Section tone="surface" className="pt-28 md:pt-36" size="sm">
+        <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground mb-4">Place order</p>
+        <h1 className="text-5xl md:text-7xl font-bold leading-[1] tracking-tight">Complete your order</h1>
+      </Section>
+    </SiteShell>
+  );
+}
+
+function OrderPageContent() {
   const router = useRouter();
   const params = useSearchParams();
   const checkout = params.get("checkout");
@@ -22,6 +41,10 @@ export default function OrderPage() {
   const [items, setItems] = useState(() => [] as any[]);
   const [amount, setAmount] = useState(0);
   const user = useCurrentUser();
+
+  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (checkout === "cart") {
@@ -38,10 +61,6 @@ export default function OrderPage() {
       setForm((f) => ({ ...f, name: user.name ?? f.name, email: user.email ?? f.email }));
     }
   }, [checkout, artworkId, cartItems, cartTotal, user]);
-
-  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
-  const [screenshot, setScreenshot] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
   const payText = `Pay Rs ${amount} to NepaKanvas — Account: 9864865976 (eSewa/Khalti)`;
   const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(payText)}`;
@@ -77,7 +96,6 @@ export default function OrderPage() {
 
     if (checkout === "cart") cartActions.clear();
 
-    // Redirect admin to orders view
     router.push(`/admin?order=${order.id}`);
   };
 
