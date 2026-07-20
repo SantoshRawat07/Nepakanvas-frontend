@@ -1,4 +1,4 @@
-// File: D:\Frontend\Nepa_kanvas\nepa-kanvas-art-gallery\src\app\about\page.tsx
+// File: D:\Frontend\Nepakanvas-fullstack\Nepakanvas-frontend\src\app\about\page.tsx
 import * as entry from '../../../../src/app/about/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

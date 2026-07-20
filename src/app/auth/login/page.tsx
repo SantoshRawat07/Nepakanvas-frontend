@@ -14,12 +14,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const res = authActions.login(email, password);
-    if (!res.ok) return setError(res.error ?? "Login failed");
-    router.push("/");
-  };
+const submit = async (e: FormEvent) => {
+  e.preventDefault();
+  const res = await authActions.login(email, password);
+  if (!res.ok) return setError(res.error ?? "Login failed");
+  router.push("/");
+};
 
   return (
     <SiteShell>

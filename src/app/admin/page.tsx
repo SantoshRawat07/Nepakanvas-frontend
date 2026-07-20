@@ -12,6 +12,7 @@ import {
   contentActions, useArtworks, useHero, useTeam,
   type EditableArtwork, type TeamMember,
 } from "@/lib/content";
+import { productActions } from "@/lib/products";
 import { CATEGORIES } from "@/lib/artworks";
 import { useOrders, orderActions, type Order } from "@/lib/orders";
 import { cn } from "@/lib/utils";
@@ -126,12 +127,16 @@ const EMPTY_ART: EditableArtwork = {
 function ArtworksEditor() {
   const artworks = useArtworks();
   const [editing, setEditing] = useState<EditableArtwork | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const isNew = editing ? !artworks.some((a) => a.id === editing.id) : false;
 
   return (
     <div className="grid lg:grid-cols-[1fr_420px] gap-6">
       <div className="space-y-3">
         <button
-          onClick={() => setEditing({ ...EMPTY_ART, id: crypto.randomUUID() })}
+          onClick={() => { setEditing({ ...EMPTY_ART, id: crypto.randomUUID() }); setPhotoFile(null); }}
           className="inline-flex items-center gap-2 rounded-full border border-dashed border-border px-5 py-3 text-sm font-medium hover:border-foreground w-full justify-center"
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} /> New artwork
@@ -141,14 +146,19 @@ function ArtworksEditor() {
             <img src={a.image} alt="" className="h-14 w-14 object-cover rounded-xl bg-secondary" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold truncate">{a.title}</p>
-              <p className="text-xs text-muted-foreground">{a.category} · {a.price} {a.featured ? "· ★ featured" : ""}</p>
+              <p className="text-xs text-muted-foreground">{a.category} · {a.price}</p>
             </div>
-            <button onClick={() => setEditing(a)} className="h-9 w-9 rounded-full hover:bg-secondary inline-flex items-center justify-center" aria-label="Edit">
+            <button
+              title="Editing existing products isn't supported by the backend yet"
+              disabled
+              className="h-9 w-9 rounded-full inline-flex items-center justify-center opacity-30 cursor-not-allowed"
+            >
               <Pencil className="h-4 w-4" strokeWidth={1.5} />
             </button>
             <button
-              onClick={() => { if (confirm(`Delete "${a.title}"?`)) contentActions.deleteArtwork(a.id); }}
-              className="h-9 w-9 rounded-full hover:bg-destructive/10 hover:text-destructive inline-flex items-center justify-center" aria-label="Delete"
+              title="Deleting isn't supported by the backend yet"
+              disabled
+              className="h-9 w-9 rounded-full inline-flex items-center justify-center opacity-30 cursor-not-allowed"
             >
               <Trash2 className="h-4 w-4" strokeWidth={1.5} />
             </button>
@@ -158,10 +168,35 @@ function ArtworksEditor() {
 
       {editing && (
         <div className="rounded-3xl border border-border p-6 space-y-4 h-fit lg:sticky lg:top-28">
-          <h3 className="font-bold text-lg">{artworks.some((a) => a.id === editing.id) ? "Edit artwork" : "New artwork"}</h3>
-          {editing.image && <img src={editing.image} alt="" className="w-full aspect-[4/5] object-cover rounded-2xl bg-secondary" />}
+          <h3 className="font-bold text-lg">{isNew ? "New artwork" : "View artwork"}</h3>
+
+          {!isNew && (
+            <p className="text-xs text-muted-foreground">
+              This product came from the backend — edits aren't wired up yet. Add a PUT/DELETE route on
+              <code> /admin/products/:id</code> and I can enable this.
+            </p>
+          )}
+
+          {photoFile ? (
+            <img src={URL.createObjectURL(photoFile)} alt="" className="w-full aspect-[4/5] object-cover rounded-2xl bg-secondary" />
+          ) : editing.image ? (
+            <img src={editing.image} alt="" className="w-full aspect-[4/5] object-cover rounded-2xl bg-secondary" />
+          ) : null}
+
           <Field label="Title" value={editing.title} onChange={(v) => setEditing({ ...editing, title: v })} />
-          <Field label="Image URL" value={editing.image} onChange={(v) => setEditing({ ...editing, image: v })} />
+
+          {isNew && (
+            <div>
+              <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Photo</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+                className="mt-2 w-full text-sm"
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Category</label>
@@ -175,21 +210,48 @@ function ArtworksEditor() {
             </div>
             <Field label="Price" value={editing.price} onChange={(v) => setEditing({ ...editing, price: v })} />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <Field label="Size" value={editing.size} onChange={(v) => setEditing({ ...editing, size: v })} />
             <Field label="Artist" value={editing.artist} onChange={(v) => setEditing({ ...editing, artist: v })} />
           </div>
+
           <Field label="Description" value={editing.description} onChange={(v) => setEditing({ ...editing, description: v })} textarea rows={4} />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={editing.featured} onChange={(e) => setEditing({ ...editing, featured: e.target.checked })} />
-            Show on the home page
-          </label>
-          <div className="flex gap-3 pt-2">
-            <CTAButton
-              onClick={() => { if (!editing.title || !editing.image) return alert("Title and image are required"); contentActions.upsertArtwork(editing); setEditing(null); }}
-            >Save</CTAButton>
-            <button onClick={() => setEditing(null)} className="text-sm text-muted-foreground hover:text-foreground">Cancel</button>
-          </div>
+
+          {isNew && (
+            <div className="flex gap-3 pt-2">
+              <CTAButton
+                disabled={saving}
+                onClick={async () => {
+                  if (!editing.title || !photoFile) return alert("Title and a photo are required");
+                  const price = parseInt(editing.price.replace(/[^\d]/g, ""), 10) || 0;
+                  setSaving(true);
+                  try {
+                    await productActions.create({
+                      title: editing.title,
+                      price,
+                      category: editing.category.toLowerCase(),
+                      size: editing.size,
+                      description: editing.description,
+                      photo: photoFile,
+                    });
+                    setEditing(null);
+                    setPhotoFile(null);
+                  } catch (err: any) {
+                    alert(err.message ?? "Failed to save product");
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+              >
+                {saving ? "Saving…" : "Save"}
+              </CTAButton>
+              <button onClick={() => { setEditing(null); setPhotoFile(null); }} className="text-sm text-muted-foreground hover:text-foreground">Cancel</button>
+            </div>
+          )}
+          {!isNew && (
+            <button onClick={() => setEditing(null)} className="text-sm text-muted-foreground hover:text-foreground">Close</button>
+          )}
         </div>
       )}
     </div>

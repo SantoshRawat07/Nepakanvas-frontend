@@ -15,12 +15,12 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const submit = (e: FormEvent) => {
-    e.preventDefault();
-    const res = authActions.signup(name, email, password);
-    if (!res.ok) return setError(res.error ?? "Signup failed");
-    router.push("/");
-  };
+const submit = async (e: FormEvent) => {
+  e.preventDefault();
+  const res = await authActions.signup(name, email, password);
+  if (!res.ok) return setError(res.error ?? "Signup failed");
+  router.push("/");
+};
 
   return (
     <SiteShell>

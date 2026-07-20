@@ -85,7 +85,7 @@ export function Navbar() {
                 className="inline-flex h-10 items-center gap-2 rounded-full px-3 hover:bg-secondary transition-colors"
               >
                 <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
-                {user && <span className="text-sm font-medium max-w-[80px] truncate">{user.name.split(" ")[0]}</span>}
+                {user && <span className="text-sm font-medium max-w-[80px] truncate">{user.userName.split(" ")[0]}</span>}
               </button>
               <AnimatePresence>
                 {userMenu && (
@@ -97,7 +97,7 @@ export function Navbar() {
                     {user ? (
                       <>
                         <div className="px-3 py-2">
-                          <p className="text-sm font-semibold truncate">{user.name}</p>
+                          <p className="text-sm font-semibold truncate">{user.userName}</p>
                           <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                         </div>
                         <div className="h-px bg-border my-1" />
