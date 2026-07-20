@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useCurrentUser } from "@/lib/auth";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { Section } from "@/components/ui-custom/Section";
@@ -41,6 +42,7 @@ function OrderPageContent() {
   const [items, setItems] = useState(() => [] as any[]);
   const [amount, setAmount] = useState(0);
   const user = useCurrentUser();
+  const isAdmin = user?.role === "admin";
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
   const [screenshot, setScreenshot] = useState<string | null>(null);
@@ -58,7 +60,7 @@ function OrderPageContent() {
       }
     }
     if (user) {
-      setForm((f) => ({ ...f, name: user.name ?? f.name, email: user.email ?? f.email }));
+      setForm((f) => ({ ...f, name: user.userName ?? f.name, email: user.email ?? f.email }));
     }
   }, [checkout, artworkId, cartItems, cartTotal, user]);
 
@@ -78,6 +80,7 @@ function OrderPageContent() {
 
   const submit = async (e?: any) => {
     e?.preventDefault();
+    if (isAdmin) return;
     if (!user) return router.push('/auth/login');
     if (!form.name || !form.phone || !form.address) return alert("Please fill name, phone and address");
     setSubmitting(true);
@@ -98,6 +101,25 @@ function OrderPageContent() {
 
     router.push(`/admin?order=${order.id}`);
   };
+
+  if (isAdmin) {
+    return (
+      <SiteShell>
+        <Section tone="surface" size="lg" className="pt-32">
+          <div className="max-w-md mx-auto text-center">
+            <h1 className="text-4xl font-bold">Not available for admin accounts</h1>
+            <p className="mt-3 text-muted-foreground">
+              Admin accounts can't place orders. Sign in as a customer to order, or head to the dashboard to manage the studio.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3 justify-center">
+              <Link href="/" className="underline underline-offset-4">Return home</Link>
+              <Link href="/admin" className="underline underline-offset-4">Go to admin dashboard</Link>
+            </div>
+          </div>
+        </Section>
+      </SiteShell>
+    );
+  }
 
   return (
     <SiteShell>

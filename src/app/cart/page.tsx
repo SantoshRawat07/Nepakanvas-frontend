@@ -45,7 +45,17 @@ export default function CartPage() {
                     <p className="text-sm font-semibold mt-1">{i.price}</p>
                     <div className="mt-3 flex items-center gap-3">
                       <div className="inline-flex items-center rounded-full border border-border">
-                        <button onClick={() => cartActions.setQty(i.id, i.qty - 1)} className="h-8 w-8 flex items-center justify-center hover:bg-secondary rounded-l-full" aria-label="Decrease">
+                        <button
+                          onClick={() => {
+                            if (i.qty - 1 <= 0) {
+                              cartActions.remove(i.id);
+                            } else {
+                              cartActions.setQty(i.id, i.qty - 1);
+                            }
+                          }}
+                          className="h-8 w-8 flex items-center justify-center hover:bg-secondary rounded-l-full"
+                          aria-label={i.qty - 1 <= 0 ? "Remove item" : "Decrease"}
+                        >
                           <Minus className="h-3.5 w-3.5" strokeWidth={1.75} />
                         </button>
                         <span className="w-8 text-center text-sm font-medium">{i.qty}</span>
@@ -63,7 +73,7 @@ export default function CartPage() {
                   </div>
                 </div>
               ))}
-              <button onClick={() => cartActions.clear()} className="text-xs text-muted-foreground hover:text-foreground">Clear cart</button>
+              {/* <button onClick={() => cartActions.clear()} className="text-xs text-muted-foreground hover:text-foreground">Clear cart</button> */}
             </div>
 
             <aside className="rounded-3xl border border-border bg-secondary/40 p-6 h-fit lg:sticky lg:top-28">
@@ -75,7 +85,6 @@ export default function CartPage() {
                 <Row label="Total" value={`Rs ${total.toLocaleString()}`} bold />
               </div>
               <CTAButton size="lg" className="w-full mt-6 hover:bg-primary" onClick={() => { if (!user) return router.push('/auth/login'); router.push(`/order?checkout=cart`); }} withArrow>Checkout</CTAButton>
-              <p className="mt-3 text-xs text-muted-foreground text-center">Frontend demo — no payment is captured.</p>
             </aside>
           </div>
         )}

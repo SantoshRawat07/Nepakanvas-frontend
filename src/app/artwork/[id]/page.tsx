@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/lib/auth";
 import { motion } from "framer-motion";
-import { ArrowLeft, ShoppingBag, Heart, Truck, ShieldCheck, Brush } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Truck, ShieldCheck, Brush } from "lucide-react";
 import { SiteShell } from "@/components/layout/SiteShell";
 import { Section } from "@/components/ui-custom/Section";
 import { Reveal } from "@/components/ui-custom/Reveal";
@@ -27,6 +27,7 @@ export default function ArtworkDetail() {
   const router = useRouter();
   const [added, setAdded] = useState(false);
   const user = useCurrentUser();
+  const isAdmin = user?.role === "admin";
 
   if (!live) {
     return (
@@ -63,9 +64,15 @@ export default function ArtworkDetail() {
             <h1 className="mt-3 text-4xl md:text-6xl font-bold leading-[1.05] tracking-tight">{live.title}</h1>
             <p className="mt-2 text-sm text-muted-foreground">by {live.artist}</p>
 
-            <div className="mt-8 flex items-baseline gap-4">
+            {live.size && (
+              <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-border px-4 py-2">
+                <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Size</span>
+                <span className="text-sm font-medium">{live.size}</span>
+              </div>
+            )}
+
+            <div className="mt-4">
               <span className="text-4xl font-bold">{live.price}</span>
-              <span className="text-sm text-muted-foreground">{live.size}</span>
             </div>
 
             <p className="mt-8 text-base text-muted-foreground leading-relaxed font-light">{live.description}</p>
@@ -73,21 +80,42 @@ export default function ArtworkDetail() {
             <div className="mt-8 flex flex-wrap gap-3">
               <CTAButton
                 size="lg" variant="outline"
+                disabled={isAdmin}
                 onClick={() => {
+                  if (isAdmin) return;
                   if (!user) return router.push('/auth/login');
                   cartActions.add({ id: live.id, title: live.title, image: live.image, price: live.price });
                   setAdded(true);
                   setTimeout(() => setAdded(false), 1500);
                 }}
+                className={isAdmin ? "opacity-40 cursor-not-allowed" : ""}
               >
                 <ShoppingBag className="h-4 w-4" strokeWidth={1.5} />
                 {added ? "Added to cart ✓" : "Add to cart"}
               </CTAButton>
-              <CTAButton size="lg" onClick={() => { if (!user) return router.push('/auth/login'); router.push(`/order?artworkId=${live.id}`); }} withArrow>Order now</CTAButton>
-              <button aria-label="Wishlist" className="h-12 w-12 rounded-full border border-border inline-flex items-center justify-center hover:border-foreground transition-colors">
-                <Heart className="h-4 w-4" strokeWidth={1.5} />
-              </button>
+              <CTAButton
+  size="lg"
+  disabled={isAdmin}
+  onClick={() => {
+    if (isAdmin) return;
+    if (!user) return router.push('/auth/login');
+    router.push(`/order?artworkId=${live.id}`);
+  }}
+  withArrow
+  className={`border border-primary bg-transparent text-primary 
+    hover:bg-primary hover:text-primary-foreground 
+    transition-all duration-300
+    ${isAdmin ? "opacity-40 cursor-not-allowed" : ""}`}
+>
+  Order now
+</CTAButton>
             </div>
+
+            {isAdmin && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Ordering is disabled for admin accounts. Sign in your account to place an order.
+              </p>
+            )}
 
             <div className="mt-10 grid grid-cols-3 gap-4">
               <Perk icon={Brush} label="Handmade" />

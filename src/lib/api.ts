@@ -11,7 +11,7 @@ async function parseBody(res: Response) {
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "GET",
-    credentials: "include", // sends the auth cookie, same as lib/auth.ts
+    credentials: "include",
   });
   const body = await parseBody(res);
   if (!res.ok) throw new Error(body?.message ?? `GET ${path} failed`);
@@ -22,9 +22,42 @@ export async function apiPostForm<T>(path: string, formData: FormData): Promise<
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     credentials: "include",
-    body: formData, // don't set Content-Type — browser adds the multipart boundary
+    body: formData,
   });
   const body = await parseBody(res);
   if (!res.ok) throw new Error(body?.message ?? `POST ${path} failed`);
   return body?.data ?? body;
+}
+
+export async function apiPutForm<T>(path: string, formData: FormData): Promise<T> {
+   console.log("PUT request to:", `${API_BASE}${path}`);
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "PUT",
+    credentials: "include",
+    body: formData,
+  });
+  const body = await parseBody(res);
+  if (!res.ok) throw new Error(body?.message ?? `PUT ${path} failed`);
+  return body?.data ?? body;
+}
+
+export async function apiDelete<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  const body = await parseBody(res);
+  if (!res.ok) throw new Error(body?.message ?? `DELETE ${path} failed`);
+  return body?.data ?? body;
+}
+export async function apiDeleteJson<T>(path: string, body: any): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const parsed = await parseBody(res);
+  if (!res.ok) throw new Error(parsed?.message ?? `DELETE ${path} failed`);
+  return parsed?.data ?? parsed;
 }
