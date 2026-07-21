@@ -6,9 +6,7 @@ import { Reveal } from "@/components/ui-custom/Reveal";
 import { CTALink } from "@/components/ui-custom/CTAButton";
 import { motion } from "framer-motion";
 import { fadeUp, stagger } from "@/lib/motion";
-import suresh from "@/assets/suresh.jpg";
-import artist from "@/assets/artist.jpg";
-import menprofile from "@/assets/menprofile.jpg";
+import { useTeamBackend, useTeamStatus } from "@/lib/teams";
 
 const TIMELINE = [
   { year: "2021", title: "A studio is born", desc: "Founded in Kathmandu around a single love for portrait painting." },
@@ -24,13 +22,10 @@ const VALUES = [
   { title: "Memory", desc: "We paint what people want to remember." },
 ];
 
-const ARTISTS = [
-  { name: "Suresh Sirmal.", role: "Founder & Lead Portrait Artist", image: suresh },
-  { name: "Mira Thakuri.", role: "Wall & Mural Specialist", image: artist },
-  { name: "Ayan R.", role: "Live Event Painter", image: menprofile },
-];
-
 export default function About() {
+  const team = useTeamBackend();
+  const { loading, error } = useTeamStatus();
+
   return (
     <SiteShell>
       <Section size="lg" tone="surface" className="pt-32 md:pt-44">
@@ -89,26 +84,37 @@ export default function About() {
         </div>
       </Section>
 
-      <Section>
+        <Section>
         <SectionHeader eyebrow="The team" title="Meet the artists." />
+
+        {loading && team.length === 0 && (
+          <p className="text-muted-foreground font-light">Loading the team…</p>
+        )}
+        {error && (
+          <p className="text-muted-foreground font-light">Couldn't load the team right now.</p>
+        )}
+        {!loading && !error && team.length === 0 && (
+          <p className="text-muted-foreground font-light">Team info coming soon.</p>
+        )}
+
         <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }}
           className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
-       {ARTISTS.map((a) => (
-  <motion.div key={a.name} variants={fadeUp} className="group">
-    <div className="aspect-[4/5] overflow-hidden rounded-3xl bg-secondary">
-      <img
-        src={typeof a.image === "string" ? a.image : a.image.src}
-        alt={a.name}
-        loading="lazy"
-        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-      />
-    </div>
-    <div className="mt-5">
-      <p className="font-semibold text-lg">{a.name}</p>
-      <p className="text-sm text-muted-foreground mt-1">{a.role}</p>
-    </div>
-  </motion.div>
-))}
+          {team.map((m) => (
+            <motion.div key={m.id} variants={fadeUp} className="group">
+              <div className="aspect-[4/5] overflow-hidden rounded-3xl bg-secondary">
+                <img
+                  src={m.image}
+                  alt={m.name}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+              </div>
+              <div className="mt-5">
+                <p className="font-semibold text-lg">{m.name}</p>
+                <p className="text-sm text-muted-foreground mt-1">{m.role}</p>
+              </div>
+            </motion.div>
+          ))}
         </motion.div>
       </Section>
 

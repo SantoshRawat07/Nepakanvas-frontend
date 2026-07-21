@@ -9,7 +9,8 @@ import { ArtCard } from "@/components/ui-custom/ArtCard";
 import { CTALink } from "@/components/ui-custom/CTAButton";
 import { FloatingIcons } from "@/components/ui-custom/FloatingIcons";
 import { fadeUp, stagger } from "@/lib/motion";
-import { useArtworks, useHero, useTeam } from "@/lib/content";
+import { useArtworks, useHero} from "@/lib/content";
+import { useTeamBackend, useTeamStatus } from "@/lib/teams";
 import wallpainting from "@/assets/wallpainting.jpeg";
 import portrait from "@/assets/portrait.webp";
 import weeding from "@/assets/weeding.jpeg";
@@ -245,10 +246,22 @@ function ServicesPreview() {
 }
 
 function TeamSection() {
-  const team = useTeam();
+  const team = useTeamBackend();
+  const { loading, error } = useTeamStatus();
+
+  if (!loading && !error && team.length === 0) return null;
+
   return (
     <Section>
       <SectionHeader eyebrow="Our team" title="The hands behind the work." />
+
+      {loading && team.length === 0 && (
+        <p className="text-muted-foreground font-light">Loading the team…</p>
+      )}
+      {error && (
+        <p className="text-muted-foreground font-light">Couldn't load the team right now.</p>
+      )}
+
       <motion.div variants={stagger} initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.1 }}
         className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10">
         {team.map((m) => (
