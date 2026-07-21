@@ -47,7 +47,7 @@ export default function AccountPage() {
                       <p className="text-xs text-muted-foreground">{new Date(o.createdAt).toLocaleString()}</p>
                       <p className="mt-2 text-sm">Status: <span className="font-medium">{o.status}</span></p>
                       {o.paymentConfirmed && <p className="text-sm">Payment: confirmed</p>}
-                      {o.delivered && <p className="text-sm">Delivered</p>}
+                      {o.deliveryStatus && <p className="text-sm">Delivered</p>}
                       <details className="mt-2">
                         <summary className="text-sm text-muted-foreground cursor-pointer">View details</summary>
                         <div className="mt-2 text-sm">

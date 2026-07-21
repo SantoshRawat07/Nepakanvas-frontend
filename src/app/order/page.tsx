@@ -14,6 +14,8 @@ import { validateCoupon, type AppliedCoupon } from "@/lib/coupon";
 import { usePaymentSettings } from "@/lib/paymentsetting";
 import { Check, Tag, CreditCard, ArrowRight } from "lucide-react";
 import { apiPostForm } from "@/lib/api";
+import { CouponPromoBanner } from "@/components/ui-custom/couponbanner";
+import { QRPaymentCard } from "@/components/ui-custom/Qrcode";
 
 export default function OrderPage() {
   return (
@@ -238,14 +240,14 @@ const submit = async (e?: any) => {
         <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground mb-4">Place order</p>
         <h1 className="text-5xl md:text-7xl font-bold leading-[1] tracking-tight">Complete your order</h1>
       </Section>
-
+     <CouponPromoBanner code="SAVE10" percent={10} /> 
       <Section>
         <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
           {/* LEFT: order summary */}
-          <div className="space-y-8">
-            <div className="rounded-3xl border border-border p-6">
+          <div className="space-y-8 lg:-mt-10">
+            <div className="rounded-3xl border border-border p-4">
               <h3 className="text-sm font-semibold uppercase tracking-[0.15em] text-muted-foreground">Order summary</h3>
-              <div className="mt-5 space-y-4">
+              <div className="mt-2 space-y-4">
                 {items.map((i: any) => (
                   <div key={i.id} className="flex items-center gap-4">
                     <img src={i.image} className="h-16 w-16 object-cover rounded-xl bg-secondary" />
@@ -286,28 +288,13 @@ const submit = async (e?: any) => {
               <p className="mt-2 text-sm text-muted-foreground">
                 Scan the QR using your mobile payment app and pay <span className="font-semibold text-foreground">Rs {finalAmount.toLocaleString()}</span>.
               </p>
-              <div className="mt-5">
-                {paymentSettings?.qrCode?.url ? (
-                  <img
-                    src={paymentSettings.qrCode.url}
-                    alt="Payment QR"
-                    className="h-52 w-52 object-contain rounded-2xl border border-border"
-                  />
-                ) : (
-                  <div className="h-52 w-52 rounded-2xl border border-dashed border-border flex items-center justify-center text-sm text-muted-foreground text-center px-4">
-                    Payment QR not set up yet
-                  </div>
-                )}
-                {paymentSettings?.instructions && (
-                  <p className="mt-3 text-xs text-muted-foreground">{paymentSettings.instructions}</p>
-                )}
-              </div>
+              <QRPaymentCard instructions={paymentSettings?.instructions} amount={finalAmount} />
             </div>
           </div>
 
           {/* RIGHT: two-step form */}
           <div>
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-8 lg:-mt-10">
               <StepPill num={1} label="Your details" active={step === "details"} done={step === "payment"} />
               <div className="flex-1 h-px bg-border" />
               <StepPill num={2} label="Payment" active={step === "payment"} done={false} />
@@ -450,7 +437,7 @@ const submit = async (e?: any) => {
 
                 <div>
                   <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    Payment screenshot <span className="text-destructive">*</span>
+                    Payment Proof screenshot <span className="text-destructive">*</span>
                   </label>
                   <input
                     type="file"

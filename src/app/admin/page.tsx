@@ -107,12 +107,6 @@ export default function AdminPage() {
               <t.icon className="h-4 w-4" strokeWidth={1.5} /> {t.label}
             </button>
           ))}
-          <button
-            onClick={() => { if (confirm("Reset all content to defaults?")) contentActions.reset(); }}
-            className="ml-auto text-xs text-muted-foreground hover:text-destructive"
-          >
-            Reset to defaults
-          </button>
         </div>
 
         {tab === "hero" && <HeroEditor />}
