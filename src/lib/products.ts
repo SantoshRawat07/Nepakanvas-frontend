@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { apiGet, apiPostForm, apiPutForm, apiDelete } from "./api";
-import type { EditableArtwork } from "./content";
+import type { EditableArtwork } from "../lib/content";
 
 interface BackendProduct {
   _id: string;

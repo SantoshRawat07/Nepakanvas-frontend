@@ -8,7 +8,7 @@ import { SiteShell } from "@/components/layout/SiteShell";
 import { Section } from "@/components/ui-custom/Section";
 import { CTAButton } from "@/components/ui-custom/CTAButton";
 import { useCart, useCartTotal, cartActions } from "@/lib/cart";
-import { getArtworkById } from "@/lib/content";
+import { getArtworkById, useArtworks } from "@/lib/content";
 import { orderActions } from "@/lib/orders";
 import { validateCoupon, type AppliedCoupon } from "@/lib/coupon";
 import { usePaymentSettings } from "@/lib/paymentsetting";
@@ -16,6 +16,7 @@ import { Check, Tag, CreditCard, ArrowRight } from "lucide-react";
 import { apiPostForm } from "@/lib/api";
 import { CouponPromoBanner } from "@/components/ui-custom/couponbanner";
 import { QRPaymentCard } from "@/components/ui-custom/Qrcode";
+import { PaymentProofUpload } from "@/components/ui-custom/paymentproof";
 
 export default function OrderPage() {
   return (
@@ -24,7 +25,6 @@ export default function OrderPage() {
     </Suspense>
   );
 }
-
 function OrderPageFallback() {
   return (
     <SiteShell>
@@ -50,6 +50,7 @@ function OrderPageContent() {
 
   const cartItems = useCart();
   const cartTotal = useCartTotal();
+  const artworks = useArtworks();
 
   const [items, setItems] = useState(() => [] as any[]);
   const [amount, setAmount] = useState(0);
@@ -59,14 +60,14 @@ function OrderPageContent() {
   const [step, setStep] = useState<Step>("details");
 
   const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
-const [screenshot, setScreenshot] = useState<string | null>(null); 
-const [screenshotFile, setScreenshotFile] = useState<File | null>(null); 
+  const [screenshot, setScreenshot] = useState<string | null>(null);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
 
   const [couponInput, setCouponInput] = useState("");
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [applyingCoupon, setApplyingCoupon] = useState(false);
-  
+
 
   const paymentSettings = usePaymentSettings();
 
@@ -75,16 +76,16 @@ const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   const phoneError =
     form.phone.length > 0 && !isValidNepaliMobile(form.phone)
       ? form.phone.length < 10
-        ? null // still typing, don't shout at them yet
+        ? null
         : "Invalid phone number — must be 10 digits starting with 98"
       : null;
 
-  useEffect(() => {
+    useEffect(() => {
     if (checkout === "cart") {
       setItems(cartItems);
       setAmount(cartTotal);
     } else if (artworkId) {
-      const a = getArtworkById(artworkId);
+      const a = artworks.find((x) => x.id === artworkId) ?? getArtworkById(artworkId);
       if (a) {
         setItems([{ id: a.id, title: a.title, price: a.price, qty: 1, image: a.image }]);
         setAmount(parseInt(a.price.replace(/[^\d]/g, ""), 10) || 0);
@@ -93,7 +94,7 @@ const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
     if (user) {
       setForm((f) => ({ ...f, name: user.userName ?? f.name, email: user.email ?? f.email }));
     }
-  }, [checkout, artworkId, cartItems, cartTotal, user]);
+  }, [checkout, artworkId, cartItems, cartTotal, user, artworks]);
 
   useEffect(() => {
     setCoupon(null);
@@ -134,60 +135,60 @@ const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
   };
 
   const onFile = async (f?: File) => {
-  if (!f) return;
-  setScreenshotFile(f);
-  const data = await new Promise<string>((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(String(r.result));
-    r.onerror = rej;
-    r.readAsDataURL(f);
-  });
-  setScreenshot(data);
-};
-const [submitting, setSubmitting] = useState(false);
-const submit = async (e?: any) => {
-  e?.preventDefault();
-  if (isAdmin) return;
-  if (!user) return router.push('/auth/login');
-  if (!form.name.trim()) return alert("Please enter your full name");
-  if (form.phone.length !== 10 || !isValidNepaliMobile(form.phone)) {
-    return alert("Please enter a valid 10-digit phone number starting with 98");
-  }
-  if (!form.address.trim()) return alert("Delivery address is required");
-  if (!screenshotFile) return alert("Please upload your payment screenshot");
-  setSubmitting(true);
-  try {
-    const fd = new FormData();
-    fd.append("fullName", form.name);
-    fd.append("phone", form.phone);
-    fd.append("email", form.email);
-    fd.append("address", form.address);
-    fd.append("notes", form.notes);
-    fd.append(
-      "items",
-      JSON.stringify(
-        items.map((i: any) => ({
-          productId: i.id,
-          title: i.title,
-          price: parseInt(String(i.price).replace(/[^\d]/g, ""), 10) || 0,
-          qty: i.qty ?? 1,
-        }))
-      )
-    );
-    if (coupon?.code) fd.append("couponCode", coupon.code);
-    fd.append("paymentImage", screenshotFile);
+    if (!f) return;
+    setScreenshotFile(f);
+    const data = await new Promise<string>((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(String(r.result));
+      r.onerror = rej;
+      r.readAsDataURL(f);
+    });
+    setScreenshot(data);
+  };
+  const [submitting, setSubmitting] = useState(false);
+  const submit = async (e?: any) => {
+    e?.preventDefault();
+    if (isAdmin) return;
+    if (!user) return router.push('/auth/login');
+    if (!form.name.trim()) return alert("Please enter your full name");
+    if (form.phone.length !== 10 || !isValidNepaliMobile(form.phone)) {
+      return alert("Please enter a valid 10-digit phone number starting with 98");
+    }
+    if (!form.address.trim()) return alert("Delivery address is required");
+    if (!screenshotFile) return alert("Please upload your payment screenshot");
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.append("fullName", form.name);
+      fd.append("phone", form.phone);
+      fd.append("email", form.email);
+      fd.append("address", form.address);
+      fd.append("notes", form.notes);
+      fd.append(
+        "items",
+        JSON.stringify(
+          items.map((i: any) => ({
+            productId: i.id,
+            title: i.title,
+            price: parseInt(String(i.price).replace(/[^\d]/g, ""), 10) || 0,
+            qty: i.qty ?? 1,
+          }))
+        )
+      );
+      if (coupon?.code) fd.append("couponCode", coupon.code);
+      fd.append("paymentImage", screenshotFile);
 
-    await apiPostForm("/checkout/order", fd);
+      await apiPostForm("/checkout/order", fd);
 
-    if (checkout === "cart") cartActions.clear();
+      if (checkout === "cart") cartActions.clear();
 
-    router.push(`/order?confirmed=1`);
-  } catch (err: any) {
-    alert(err.message ?? "Failed to submit order");
-  } finally {
-    setSubmitting(false);
-  }
-};
+      router.push(`/order?confirmed=1`);
+    } catch (err: any) {
+      alert(err.message ?? "Failed to submit order");
+    } finally {
+      setSubmitting(false);
+    }
+  };
   if (isAdmin) {
     return (
       <SiteShell>
@@ -240,7 +241,7 @@ const submit = async (e?: any) => {
         <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground mb-4">Place order</p>
         <h1 className="text-5xl md:text-7xl font-bold leading-[1] tracking-tight">Complete your order</h1>
       </Section>
-     <CouponPromoBanner code="SAVE10" percent={10} /> 
+      <CouponPromoBanner />
       <Section>
         <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
           {/* LEFT: order summary */}
@@ -323,9 +324,8 @@ const submit = async (e?: any) => {
                     inputMode="numeric"
                     maxLength={10}
                     placeholder="98XXXXXXXX"
-                    className={`mt-2 w-full rounded-full border px-4 py-3 text-sm focus:outline-none ${
-                      phoneError ? "border-destructive focus:border-destructive" : "border-border focus:border-foreground"
-                    }`}
+                    className={`mt-2 w-full rounded-full border px-4 py-3 text-sm focus:outline-none ${phoneError ? "border-destructive focus:border-destructive" : "border-border focus:border-foreground"
+                      }`}
                   />
                   {phoneError && <p className="mt-1.5 text-sm text-destructive">{phoneError}</p>}
                 </div>
@@ -435,23 +435,12 @@ const submit = async (e?: any) => {
                   />
                 </div>
 
-                <div>
-                  <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    Payment Proof screenshot <span className="text-destructive">*</span>
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => onFile(e.target.files?.[0])}
-                    required
-                    className="mt-2 w-full text-sm"
-                  />
-                  {screenshot ? (
-                    <img src={screenshot} alt="screenshot" className="mt-3 h-40 object-contain rounded-xl border border-border" />
-                  ) : (
-                    <p className="mt-1.5 text-xs text-muted-foreground">Upload proof of payment to submit your order.</p>
-                  )}
-                </div>
+                <PaymentProofUpload
+                  previewUrl={screenshot}
+                  fileName={screenshotFile?.name}
+                  onChange={(f) => onFile(f)}
+                  onClear={() => { setScreenshot(null); setScreenshotFile(null); }}
+                />
 
                 <CTAButton type="submit" className="w-full hover:bg-primary" disabled={submitting}>
                   {submitting ? "Submitting…" : "Submit order"}
@@ -469,13 +458,12 @@ function StepPill({ num, label, active, done }: { num: number; label: string; ac
   return (
     <div className="flex items-center gap-2">
       <div
-        className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-semibold border shrink-0 ${
-          active
+        className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-semibold border shrink-0 ${active
             ? "bg-foreground text-background border-foreground"
             : done
-            ? "bg-emerald-600 text-white border-emerald-600"
-            : "bg-background text-muted-foreground border-border"
-        }`}
+              ? "bg-emerald-600 text-white border-emerald-600"
+              : "bg-background text-muted-foreground border-border"
+          }`}
       >
         {done ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : num}
       </div>

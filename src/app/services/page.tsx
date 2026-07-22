@@ -179,7 +179,7 @@ export default function Services() {
                     ))}
                   </ul>
                   <div className="mt-10 flex items-center gap-5">
-                    <CTALink href="/contact" withArrow>Request a quote</CTALink>
+                    <CTALink href="/contact" withArrow className="hover:bg-primary">Request a quote</CTALink>
                     <p className="text-sm font-semibold">{s.price}</p>
                   </div>
                 </div>

@@ -8,6 +8,8 @@ import { Section } from "@/components/ui-custom/Section";
 import { useTeamBackend, useTeamStatus, teamActions } from "@/lib/teams";
 import { CTAButton } from "@/components/ui-custom/CTAButton";
 import { useCurrentUser } from "@/lib/auth";
+import { useCoupons, useCouponsStatus, couponActions, type Coupon, type CouponInput } from "@/lib/admincoupon";
+import { Tag, ToggleLeft, ToggleRight } from "lucide-react"; // add to your existing lucide-react import line
 import {
   contentActions, useArtworks, useHero, useTeam,
   type EditableArtwork, type TeamMember,
@@ -19,7 +21,7 @@ import { cn } from "@/lib/utils";
 import { useCustomOrders, useCustomOrdersStatus, customOrderActions } from "@/lib/customorder";
 import { Pencil, Trash2, Plus, LayoutDashboard, Palette, Users, Home as HomeIcon, ClipboardList, ListOrdered, X, Download, Maximize2 } from "lucide-react";
 import { useOrders, useOrdersStatus, orderActions, getPaymentStatus, type Order, type PaymentStatus, type DeliveryStatus } from "@/lib/orders";
-type Tab = "hero" | "artworks" | "team" | "orders" | "customOrders";
+type Tab = "hero" | "artworks" | "team" | "orders" | "customOrders" | "coupons";
 function toDownloadUrl(url: string): string {
   if (!url) return url;
   return url.includes("/upload/")
@@ -84,6 +86,7 @@ export default function AdminPage() {
     { id: "team", label: "Team", icon: Users },
     { id: "orders", label: "Orders", icon: ClipboardList },
     { id: "customOrders", label: "Custom Orders", icon: ListOrdered },
+    { id: "coupons", label: "Coupons", icon: Tag}
   ];
   return (
     <SiteShell>
@@ -114,6 +117,7 @@ export default function AdminPage() {
         {tab === "team" && <TeamEditor />}
         {tab === "orders" && <OrdersManager />}
         {tab === "customOrders" && <CustomOrdersManager />}
+        {tab === "coupons" && <CouponsManager />}
       </Section>
     </SiteShell>
   );
@@ -520,6 +524,218 @@ function OrdersManager() {
   if (orders.length === 0) {
     return <div className="rounded-3xl border border-border p-10 text-center text-muted-foreground">No orders yet.</div>;
   }
+const EMPTY_COUPON: CouponInput = {
+  code: "",
+  discountType: "percentage",
+  discountValue: 10,
+  expiresAt: "",
+  minOrderAmount: 0,
+  usageLimit: undefined,
+};
+
+function CouponsManager() {
+  const coupons = useCoupons();
+  const { loading, error } = useCouponsStatus();
+  const [editing, setEditing] = useState<{ id: string | null; form: CouponInput } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const startNew = () => setEditing({ id: null, form: { ...EMPTY_COUPON } });
+
+  const startEdit = (c: Coupon) =>
+    setEditing({
+      id: c._id,
+      form: {
+        code: c.code,
+        discountType: c.discountType,
+        discountValue: c.discountValue,
+        expiresAt: c.expiresAt ? c.expiresAt.slice(0, 10) : "",
+        minOrderAmount: c.minOrderAmount ?? 0,
+        usageLimit: c.usageLimit,
+      },
+    });
+
+  const save = async () => {
+    if (!editing) return;
+    const { form, id } = editing;
+    if (!form.code.trim()) return alert("Coupon code is required");
+    if (!form.discountValue || form.discountValue <= 0) return alert("Discount value must be greater than 0");
+
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        code: form.code.trim().toUpperCase(),
+        expiresAt: form.expiresAt || undefined,
+        usageLimit: form.usageLimit || undefined,
+      };
+      if (id) await couponActions.update(id, payload);
+      else await couponActions.create(payload);
+      setEditing(null);
+    } catch (e: any) {
+      alert(e.message ?? "Failed to save coupon");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const act = async (fn: () => Promise<void>, id: string) => {
+    setBusyId(id);
+    try { await fn(); } catch (e: any) { alert(e.message ?? "Action failed"); }
+    finally { setBusyId(null); }
+  };
+
+  if (loading && coupons.length === 0) {
+    return <div className="rounded-3xl border border-border p-10 text-center text-muted-foreground">Loading coupons…</div>;
+  }
+  if (error) {
+    return <div className="rounded-3xl border border-border p-10 text-center text-destructive">{error}</div>;
+  }
+
+  return (
+    <div className="grid lg:grid-cols-[1fr_380px] gap-6">
+      <div className="space-y-3">
+        <button
+          onClick={startNew}
+          className="inline-flex items-center gap-2 rounded-full border border-dashed border-border px-5 py-3 text-sm font-medium hover:border-foreground w-full justify-center"
+        >
+          <Plus className="h-4 w-4" strokeWidth={1.5} /> New coupon
+        </button>
+
+        {coupons.length === 0 ? (
+          <div className="rounded-3xl border border-border p-10 text-center text-muted-foreground">No coupons yet.</div>
+        ) : (
+          coupons.map((c) => {
+            const expired = !!c.expiresAt && new Date(c.expiresAt).getTime() < Date.now();
+            const limitReached = c.usageLimit !== undefined && c.usedCount >= c.usageLimit;
+            return (
+              <div key={c._id} className="rounded-2xl border border-border p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold">{c.code}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {c.discountType === "percentage" ? `${c.discountValue}% off` : `Rs ${c.discountValue} off`}
+                      {c.minOrderAmount ? ` · min Rs ${c.minOrderAmount}` : ""}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Used {c.usedCount}{c.usageLimit !== undefined ? ` / ${c.usageLimit}` : " (unlimited)"}
+                      {c.expiresAt ? ` · expires ${new Date(c.expiresAt).toLocaleDateString()}` : ""}
+                    </p>
+                    <div className="mt-2 flex gap-1.5 flex-wrap">
+                      {!c.isActive && <span className="text-xs bg-secondary px-2 py-0.5 rounded-full">Disabled</span>}
+                      {expired && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Expired</span>}
+                      {limitReached && <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Limit reached</span>}
+                      {c.isActive && !expired && !limitReached && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1.5 items-end shrink-0">
+                    <button onClick={() => startEdit(c)} className="text-xs underline underline-offset-4 text-muted-foreground hover:text-foreground">
+                      Edit
+                    </button>
+                    <button
+                      disabled={busyId === c._id}
+                      onClick={() => act(() => couponActions.toggle(c._id), c._id)}
+                      className="text-xs underline underline-offset-4 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                    >
+                      {c.isActive ? "Disable" : "Enable"}
+                    </button>
+                    <button
+                      disabled={busyId === c._id}
+                      onClick={() => { if (confirm(`Delete coupon ${c.code}?`)) act(() => couponActions.remove(c._id), c._id); }}
+                      className="text-xs text-destructive underline underline-offset-4 disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {editing && (
+        <div className="rounded-3xl border border-border p-6 space-y-4 h-fit lg:sticky lg:top-28">
+          <h3 className="font-bold text-lg">{editing.id ? "Edit coupon" : "New coupon"}</h3>
+
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Code</label>
+            <input
+              value={editing.form.code}
+              onChange={(e) => setEditing({ ...editing, form: { ...editing.form, code: e.target.value.toUpperCase() } })}
+              className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground uppercase"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Type</label>
+              <select
+                value={editing.form.discountType}
+                onChange={(e) => setEditing({ ...editing, form: { ...editing.form, discountType: e.target.value as "percentage" | "flat" } })}
+                className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+              >
+                <option value="percentage">Percentage</option>
+                <option value="flat">Flat amount</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Value {editing.form.discountType === "percentage" ? "(%)" : "(Rs)"}
+              </label>
+              <input
+                type="number"
+                value={editing.form.discountValue}
+                onChange={(e) => setEditing({ ...editing, form: { ...editing.form, discountValue: Number(e.target.value) } })}
+                className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Minimum order amount (Rs)</label>
+            <input
+              type="number"
+              value={editing.form.minOrderAmount ?? 0}
+              onChange={(e) => setEditing({ ...editing, form: { ...editing.form, minOrderAmount: Number(e.target.value) } })}
+              className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Usage limit (leave empty = unlimited)</label>
+            <input
+              type="number"
+              value={editing.form.usageLimit ?? ""}
+              onChange={(e) => setEditing({ ...editing, form: { ...editing.form, usageLimit: e.target.value ? Number(e.target.value) : undefined } })}
+              className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+              placeholder="e.g. 50"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Expiry date (leave empty = never)</label>
+            <input
+              type="date"
+              value={editing.form.expiresAt ?? ""}
+              onChange={(e) => setEditing({ ...editing, form: { ...editing.form, expiresAt: e.target.value } })}
+              className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <CTAButton className="hover:bg-black hover:text-white" disabled={saving} onClick={save}>
+              {saving ? "Saving…" : "Save"}
+            </CTAButton>
+            <button onClick={() => setEditing(null)} className="text-sm text-muted-foreground hover:text-foreground">Cancel</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
   return (
     <>
@@ -939,6 +1155,245 @@ function Field({ label, value, onChange, type = "text", textarea, rows = 3 }: { 
       ) : (
         <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
           className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground" />
+      )}
+    </div>
+  );
+}
+const EMPTY_COUPON: CouponInput = {
+  code: "",
+  discountType: "percentage",
+  discountValue: 10,
+  expiresAt: "",
+  minOrderAmount: 0,
+  usageLimit: undefined,
+};
+
+function CouponsManager() {
+  const coupons = useCoupons();
+  const { loading, error } = useCouponsStatus();
+  const [editing, setEditing] = useState<{ id: string | null; form: CouponInput } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  const startNew = () => setEditing({ id: null, form: { ...EMPTY_COUPON } });
+
+  const startEdit = (c: Coupon) =>
+    setEditing({
+      id: c._id,
+      form: {
+        code: c.code,
+        discountType: c.discountType,
+        discountValue: c.discountValue,
+        expiresAt: c.expiresAt ? c.expiresAt.slice(0, 10) : "",
+        minOrderAmount: c.minOrderAmount ?? 0,
+        usageLimit: c.usageLimit,
+      },
+    });
+
+  const save = async () => {
+    if (!editing) return;
+    const { form, id } = editing;
+    if (!form.code.trim()) return alert("Coupon code is required");
+    if (!form.discountValue || form.discountValue <= 0) return alert("Discount value must be greater than 0");
+
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        code: form.code.trim().toUpperCase(),
+        expiresAt: form.expiresAt || undefined,
+        usageLimit: form.usageLimit || undefined,
+      };
+      if (id) await couponActions.update(id, payload);
+      else await couponActions.create(payload);
+      setEditing(null);
+    } catch (e: any) {
+      alert(e.message ?? "Failed to save coupon");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const act = async (fn: () => Promise<void>, id: string) => {
+    setBusyId(id);
+    try { await fn(); } catch (e: any) { alert(e.message ?? "Action failed"); }
+    finally { setBusyId(null); }
+  };
+
+  if (loading && coupons.length === 0) {
+    return <div className="rounded-3xl border border-border p-10 text-center text-muted-foreground">Loading coupons…</div>;
+  }
+  if (error) {
+    return <div className="rounded-3xl border border-border p-10 text-center text-destructive">{error}</div>;
+  }
+
+  return (
+    <div className="grid lg:grid-cols-[1fr_380px] gap-6">
+      <div>
+        <button
+          onClick={startNew}
+          className="mb-4 inline-flex items-center gap-2 rounded-full border border-dashed border-border px-5 py-3 text-sm font-medium hover:border-foreground w-full justify-center"
+        >
+          <Plus className="h-4 w-4" strokeWidth={1.5} /> New coupon
+        </button>
+
+        {coupons.length === 0 ? (
+          <div className="rounded-3xl border border-border p-10 text-center text-muted-foreground">No coupons yet.</div>
+        ) : (
+          <div className="rounded-3xl border border-border overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-secondary/40 text-left">
+                  <th className="p-4 font-semibold">Code</th>
+                  <th className="p-4 font-semibold">Discount</th>
+                  <th className="p-4 font-semibold">Usage</th>
+                  <th className="p-4 font-semibold">Expires</th>
+                  <th className="p-4 font-semibold">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {coupons.map((c) => {
+                  const expired = !!c.expiresAt && new Date(c.expiresAt).getTime() < Date.now();
+                  const limitReached = c.usageLimit !== undefined && c.usedCount >= c.usageLimit;
+                  return (
+                    <tr key={c._id} className="border-b border-border last:border-0">
+                      <td className="p-4 font-bold">{c.code}</td>
+                      <td className="p-4 whitespace-nowrap">
+                        {c.discountType === "percentage" ? `${c.discountValue}% off` : `Rs ${c.discountValue} off`}
+                        {c.minOrderAmount ? (
+                          <span className="block text-xs text-muted-foreground">min Rs {c.minOrderAmount}</span>
+                        ) : null}
+                      </td>
+                      <td className="p-4 whitespace-nowrap">
+                        {c.usedCount}{c.usageLimit !== undefined ? ` / ${c.usageLimit}` : " / ∞"}
+                      </td>
+                      <td className="p-4 whitespace-nowrap text-muted-foreground">
+                        {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : "Never"}
+                      </td>
+                      <td className="p-4">
+                        {!c.isActive ? (
+                          <span className="text-xs bg-secondary px-2 py-1 rounded-full">Disabled</span>
+                        ) : expired ? (
+                          <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full">Expired</span>
+                        ) : limitReached ? (
+                          <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Limit reached</span>
+                        ) : (
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Active</span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-1 justify-end">
+                          <button
+                            onClick={() => startEdit(c)}
+                            className="h-8 w-8 rounded-full hover:bg-secondary inline-flex items-center justify-center"
+                            aria-label="Edit"
+                          >
+                            <Pencil className="h-4 w-4" strokeWidth={1.5} />
+                          </button>
+                          <button
+                            disabled={busyId === c._id}
+                            onClick={() => act(() => couponActions.toggle(c._id), c._id)}
+                            className="h-8 w-8 rounded-full hover:bg-secondary inline-flex items-center justify-center disabled:opacity-40"
+                            aria-label={c.isActive ? "Disable" : "Enable"}
+                            title={c.isActive ? "Disable" : "Enable"}
+                          >
+                            {c.isActive ? <ToggleRight className="h-4 w-4" strokeWidth={1.5} /> : <ToggleLeft className="h-4 w-4" strokeWidth={1.5} />}
+                          </button>
+                          <button
+                            disabled={busyId === c._id}
+                            onClick={() => { if (confirm(`Delete coupon ${c.code}?`)) act(() => couponActions.remove(c._id), c._id); }}
+                            className="h-8 w-8 rounded-full hover:bg-destructive/10 hover:text-destructive inline-flex items-center justify-center disabled:opacity-40"
+                            aria-label="Delete"
+                          >
+                            <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {editing && (
+        <div className="rounded-3xl border border-border p-6 space-y-4 h-fit lg:sticky lg:top-28">
+          <h3 className="font-bold text-lg">{editing.id ? "Edit coupon" : "New coupon"}</h3>
+
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Code</label>
+            <input
+              value={editing.form.code}
+              onChange={(e) => setEditing({ ...editing, form: { ...editing.form, code: e.target.value.toUpperCase() } })}
+              className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground uppercase"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Type</label>
+              <select
+                value={editing.form.discountType}
+                onChange={(e) => setEditing({ ...editing, form: { ...editing.form, discountType: e.target.value as "percentage" | "flat" } })}
+                className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+              >
+                <option value="percentage">Percentage</option>
+                <option value="flat">Flat amount</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Value {editing.form.discountType === "percentage" ? "(%)" : "(Rs)"}
+              </label>
+              <input
+                type="number"
+                value={editing.form.discountValue}
+                onChange={(e) => setEditing({ ...editing, form: { ...editing.form, discountValue: Number(e.target.value) } })}
+                className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Minimum order amount (Rs)</label>
+            <input
+              type="number"
+              value={editing.form.minOrderAmount ?? 0}
+              onChange={(e) => setEditing({ ...editing, form: { ...editing.form, minOrderAmount: Number(e.target.value) } })}
+              className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Usage limit (leave empty = unlimited)</label>
+            <input
+              type="number"
+              value={editing.form.usageLimit ?? ""}
+              onChange={(e) => setEditing({ ...editing, form: { ...editing.form, usageLimit: e.target.value ? Number(e.target.value) : undefined } })}
+              className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+              placeholder="e.g. 50"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Expiry date (leave empty = never)</label>
+            <input
+              type="date"
+              value={editing.form.expiresAt ?? ""}
+              onChange={(e) => setEditing({ ...editing, form: { ...editing.form, expiresAt: e.target.value } })}
+              className="mt-2 w-full rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <CTAButton className="hover:bg-black hover:text-white" disabled={saving} onClick={save}>
+              {saving ? "Saving…" : "Save"}
+            </CTAButton>
+            <button onClick={() => setEditing(null)} className="text-sm text-muted-foreground hover:text-foreground">Cancel</button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -19,17 +19,22 @@ interface BackendCouponResponse {
 }
 
 export async function validateCoupon(code: string, amount: number): Promise<AppliedCoupon> {
+  const typedCode = code.trim();
+
   const res = await fetch(`${API_BASE}/checkout/coupon/validate`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, subtotal: amount }),
+    body: JSON.stringify({ code: typedCode, subtotal: amount }),
   });
 
   const body = await res.json().catch(() => null);
   if (!res.ok) throw new Error(body?.message ?? "Invalid or expired coupon code");
 
   const data: BackendCouponResponse = body?.data ?? body;
+  if (data.code !== typedCode) {
+    throw new Error("Invalid or expired coupon code");
+  }
 
   return {
     code: data.code,

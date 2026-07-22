@@ -64,8 +64,6 @@ export const contentActions = {
     contentStore.set((s) => ({ ...s, team: s.team.filter((m) => m.id !== id) })),
   reset: () => contentStore.set(SEED),
 };
-
-// Now reads from the live products store instead of stale seed data.
 export function getArtworkById(id: string): EditableArtwork | undefined {
   return getProductsSnapshot().find((a) => a.id === id);
 }

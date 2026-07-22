@@ -1,3 +1,9 @@
 {
-  "/order/page": "app/order/page.js"
+  "/page": "app/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/gallery/page": "app/gallery/page.js",
+  "/order/page": "app/order/page.js",
+  "/services/page": "app/services/page.js",
+  "/classes/page": "app/classes/page.js",
+  "/contact/page": "app/contact/page.js"
 }
