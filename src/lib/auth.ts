@@ -7,6 +7,8 @@ export interface User {
   userName: string;
   email: string;
   role: "user" | "admin";
+  avatar?: string;        // ✅ add this — Google users have a profile picture
+  isGoogleUser?: boolean; // ✅ add this — useful to hide "change password" UI for Google users
 }
 
 interface AuthState {
@@ -66,6 +68,24 @@ export const authActions = {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
+      await authActions.checkAuth();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: (e as Error).message };
+    }
+  },
+
+  // ✅ new — redirects browser to backend Google OAuth flow
+  googleLogin: (): void => {
+    // full page redirect — not a fetch call, because Google OAuth
+    // requires actual browser navigation, not an API request
+    window.location.href = `${API_BASE}/auth/google`;
+  },
+
+  // ✅ new — called on /auth/success page after Google redirects back
+  // syncs the store after cookie is already set by backend
+  syncAfterGoogleLogin: async (): Promise<{ ok: boolean; error?: string }> => {
+    try {
       await authActions.checkAuth();
       return { ok: true };
     } catch (e) {
