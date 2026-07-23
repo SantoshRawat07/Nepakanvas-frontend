@@ -82,12 +82,14 @@ export const authActions = {
     window.location.href = `${API_BASE}/auth/google`;
   },
 
-  // ✅ new — called on /auth/success page after Google redirects back
-  // syncs the store after cookie is already set by backend
-  syncAfterGoogleLogin: async (): Promise<{ ok: boolean; error?: string }> => {
+syncAfterGoogleLogin: async (): Promise<{ ok: boolean; user?: User; error?: string }> => {
     try {
       await authActions.checkAuth();
-      return { ok: true };
+      const { user, status } = authStore.get();
+      if (status !== "authenticated" || !user) {
+        return { ok: false, error: "Not authenticated" };
+      }
+      return { ok: true, user };
     } catch (e) {
       return { ok: false, error: (e as Error).message };
     }

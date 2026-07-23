@@ -78,51 +78,109 @@ export function Navbar() {
               )}
             </Link>
 
-            <div className="relative hidden md:block">
-              <button
-                aria-label="Account"
-                onClick={() => setUserMenu((v) => !v)}
-                className="inline-flex h-10 items-center gap-2 rounded-full px-3 hover:bg-secondary transition-colors"
-              >
-                <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
-                {user && <span className="text-sm font-medium max-w-[80px] truncate">{user.userName.split(" ")[0]}</span>}
-              </button>
-              <AnimatePresence>
-                {userMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
-                    className="absolute right-0 mt-2 w-56 rounded-2xl border border-border bg-background shadow-elevated p-2"
-                    onMouseLeave={() => setUserMenu(false)}
-                  >
-                    {user ? (
-                      <>
-                        <div className="px-3 py-2">
-                          <p className="text-sm font-semibold truncate">{user.userName}</p>
-                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                        </div>
-                        <div className="h-px bg-border my-1" />
-                        {user.role === "admin" && (
-                          <Link href="/admin" onClick={() => setUserMenu(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm">
-                            <LayoutDashboard className="h-4 w-4" strokeWidth={1.5} /> Admin dashboard
-                          </Link>
-                        )}
-                        <button
-                          onClick={() => { authActions.logout(); setUserMenu(false); }}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm text-left"
-                        >
-                          <LogOut className="h-4 w-4" strokeWidth={1.5} /> Sign out
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <Link href="/auth/login" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Sign in</Link>
-                        <Link href="/auth/signup" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Create account</Link>
-                      </>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+<div className="relative hidden md:block">
+  <button
+    aria-label="Account"
+   onClick={() => {
+      if (!user) {
+        router.push("/auth/login");
+        return;
+      }
+      setUserMenu((v) => !v);
+    }}
+    className="inline-flex h-10 items-center gap-2 rounded-full px-2.5 hover:bg-secondary transition-colors"
+  >
+    {user?.avatar ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={user.avatar}
+        alt={user.userName}
+        referrerPolicy="no-referrer"
+        className="h-7 w-7 rounded-full object-cover ring-1 ring-border"
+      />
+    ) : user ? (
+      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
+        {user.userName
+          .split(" ")
+          .map((p) => p[0])
+          .slice(0, 2)
+          .join("")
+          .toUpperCase()}
+      </span>
+    ) : (
+      <User className="h-[18px] w-[18px]" strokeWidth={1.5} />
+    )}
+    {user && (
+      <span className="text-sm font-medium max-w-[80px] truncate">
+        {user.userName.split(" ")[0]}
+      </span>
+    )}
+  </button>
+
+  <AnimatePresence>
+    {userMenu && (
+      <motion.div
+        initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}
+        className="absolute right-0 mt-2 w-56 rounded-2xl border border-border bg-background shadow-elevated p-2"
+        onMouseLeave={() => setUserMenu(false)}
+      >
+        {user ? (
+          <>
+            <div className="flex items-center gap-3 px-3 py-2">
+              {user.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatar}
+                  alt={user.userName}
+                  referrerPolicy="no-referrer"
+                  className="h-9 w-9 rounded-full object-cover ring-1 ring-border shrink-0"
+                />
+              ) : (
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-semibold">
+                  {user.userName
+                    .split(" ")
+                    .map((p) => p[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase()}
+                </span>
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold truncate">{user.userName}</p>
+                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+              </div>
             </div>
+            <div className="h-px bg-border my-1" />
+            <Link href="/profile" onClick={() => setUserMenu(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm">
+              <User className="h-4 w-4" strokeWidth={1.5} /> Profile
+            </Link>
+          {user.role === "admin" ? (
+  <Link href="/admin" onClick={() => setUserMenu(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm">
+    <LayoutDashboard className="h-4 w-4" strokeWidth={1.5} /> Admin dashboard
+  </Link>
+) : (
+  <Link href="/dashboard" onClick={() => setUserMenu(false)} className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm">
+    <LayoutDashboard className="h-4 w-4" strokeWidth={1.5} /> Dashboard
+  </Link>
+)}
+            <div className="h-px bg-border my-1" />
+            <button
+              onClick={() => { authActions.logout(); setUserMenu(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-secondary text-sm text-left text-destructive"
+            >
+              <LogOut className="h-4 w-4" strokeWidth={1.5} /> Sign out
+            </button>
+          </>
+        ) : (
+          <>
+            <Link href="/auth/login" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Sign in</Link>
+            <Link href="/auth/signup" onClick={() => setUserMenu(false)} className="block px-3 py-2 rounded-xl hover:bg-secondary text-sm">Create account</Link>
+          </>
+        )}
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
 
             <button
               aria-label="Menu" onClick={() => setOpen(true)}
