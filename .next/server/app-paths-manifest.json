@@ -1,8 +1,8 @@
 {
   "/page": "app/page.js",
-  "/auth/login/page": "app/auth/login/page.js",
-  "/auth/signup/page": "app/auth/signup/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/about/page": "app/about/page.js",
-  "/_not-found/page": "app/_not-found/page.js"
+  "/services/page": "app/services/page.js",
+  "/gallery/page": "app/gallery/page.js",
+  "/order/page": "app/order/page.js",
+  "/classes/page": "app/classes/page.js",
+  "/contact/page": "app/contact/page.js"
 }
